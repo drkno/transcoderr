@@ -10,6 +10,10 @@ class ScriptsService {
         this._scriptsDirectories = scriptsDirectories;
     }
 
+    async getMetaScripts() {
+        return await this._getAllScriptsOfType(ScriptType.META);
+    }
+
     async getPreScripts() {
         return await this._getAllScriptsOfType(ScriptType.PRE);
     }

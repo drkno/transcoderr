@@ -1,3 +1,5 @@
+const { createHash } = require('crypto');
+const { createReadStream } = require('fs');
 const SandboxedModule = require('sandboxed-module');
 const ScriptType = require('./type');
 
@@ -66,6 +68,7 @@ class Script {
     __convertToScriptType(types) {
         return (types || []).map(type => {
                 switch(type) {
+                    case 'meta': return ScriptType.META;
                     case 'pre': return ScriptType.PRE;
                     case 'post': return ScriptType.POST;
                     case 'exec': return ScriptType.EXEC;
@@ -73,6 +76,16 @@ class Script {
                 }
             })
             .filter(type => type !== false);
+    }
+
+    __checksumFile(path) {
+        return new Promise((resolve, reject) => {
+            const hash = createHash('md5');
+            const stream = createReadStream(path);
+            stream.on('error', err => reject(err));
+            stream.on('data', chunk => hash.update(chunk));
+            stream.on('end', () => resolve(hash.digest('hex')));
+        });
     }
 }
 

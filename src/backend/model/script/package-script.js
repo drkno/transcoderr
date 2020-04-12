@@ -10,6 +10,8 @@ class PackageScript extends Script {
         super();
         this._packageJsonLocation = packageJsonLocation;
         this._version = null;
+        this._packageJsonCache = null;
+        this._packageJsonHash = null;
     }
 
     async getScriptInfo() {
@@ -41,9 +43,14 @@ class PackageScript extends Script {
 
     async _getJsonContents() {
         try {
-            return JSON.parse(await asyncReadFile(this._packageJsonLocation, {
-                encoding: 'utf8'
-            }));
+            const fileHash = await this.__checksumFile(this._packageJsonLocation);
+            if (this._packageJsonCache === null || fileHash !== this._packageJsonHash) {
+                this._packageJsonCache = JSON.parse(await asyncReadFile(this._packageJsonLocation, {
+                    encoding: 'utf8'
+                }));
+                this._packageJsonHash = fileHash;
+            }
+            return this._packageJsonCache;
         } catch (e) {
             LOG.error(e);
             this.__setHasErrors();

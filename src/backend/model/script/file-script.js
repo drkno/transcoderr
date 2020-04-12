@@ -1,5 +1,3 @@
-const { createHash } = require('crypto');
-const { createReadStream } = require('fs');
 const Script = require('./base');
 
 class FileScript extends Script {
@@ -28,22 +26,12 @@ class FileScript extends Script {
     }
 
     async __shouldInvalidate() {
-        const checksum = await this._checksumFile('md5', this._fileLocation);
+        const checksum = await this.__checksumFile(this._fileLocation);
         if (checksum !== this._checksum) {
             this._checksum = checksum;
             return true;
         }
         return false;
-    }
-
-    _checksumFile(hashName, path) {
-        return new Promise((resolve, reject) => {
-            const hash = createHash(hashName);
-            const stream = createReadStream(path);
-            stream.on('error', err => reject(err));
-            stream.on('data', chunk => hash.update(chunk));
-            stream.on('end', () => resolve(hash.digest('hex')));
-        });
     }
 }
 

@@ -1,16 +1,17 @@
 const ChildProcess = require('../utils/spawn');
 
-class ProbePreScript {
+class ProbeMetaScript {
     describe() {
         return {
             name: 'ffprobe',
             description: 'adds ffprobe data to events',
             version: '1.0.0',
-            type: ['pre']
+            type: ['meta']
         };
     }
 
-    async premain(file, collector) {
+    async premain(collector) {
+        const file = collector.getMetaDataItem('file');
         collector.appendMetaData('probe', await this._ffprobe(file));
     }
 
@@ -23,4 +24,4 @@ class ProbePreScript {
     }
 }
 
-module.exports = new ProbePreScript();
+module.exports = new ProbeMetaScript();
