@@ -1,7 +1,7 @@
 const { createLogger, format, transports } = require('winston');
 
 let setupComplete = false;
-module.exports = () => {
+module.exports = logLevel => {
     if (setupComplete) {
         return global.LOG;
     }

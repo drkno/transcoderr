@@ -1,7 +1,2 @@
-const ExecutorService = require('./executor.service');
-const ScriptsService = require('./scripts.service');
-
-module.exports = {
-    ExecutorService,
-    ScriptsService
-};
+const ServiceFactory = require('./service-factory');
+module.exports = ServiceFactory;

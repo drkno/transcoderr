@@ -1,26 +1,23 @@
 const { promisify } = require('util');
 const express = require('express');
+const { json } = require('body-parser');
+const v1Routes = require('./api/v1');
 const setupLogging = require('./logging');
-
-const app = express();
-
-const listen = promisify(app.listen.bind(app));
-const port = process.env.PORT || 4300;
-
-const { ScriptsService, ExecutorService } = require('./service');
+const serviceFactory = require('./service');
 
 (async() => {
-    await setupLogging(process.env.LOG_LEVEL || 'info');
+    const preferencesService = serviceFactory.getPreferencesService();
+
+    setupLogging(preferencesService.getLogLevel());
+    
+    const app = express();
+
+    const listen = promisify(app.listen.bind(app));
+    const port = preferencesService.getPort();
+    
+    app.use(json());
+    app.use('/api/v1', v1Routes(serviceFactory));
+
     await listen(port);
     LOG.info(`Webserver started on port ${port}`);
-
-    const scriptsService = new ScriptsService(['C:\\Users\\Matthew\\Documents\\Development\\transcoderr\\src\\backend\\scripts']);
-    const executorService = new ExecutorService(scriptsService);
-
-    LOG.info(await executorService.execute([
-        "C:\\Users\\Matthew\\Documents\\logo_round.png",
-        "C:\\Users\\Matthew\\Downloads\\The Mandalorian - [01x03] - Chapter 3.mkv"
-    ]));
-
-    LOG.info((await scriptsService.getAllScripts()).length);
 })();

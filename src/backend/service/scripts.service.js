@@ -6,8 +6,16 @@ const { PackageScript, FileScript, ScriptType } = require('../model/script');
 const asyncReadDir = promisify(readdir);
 
 class ScriptsService {
-    constructor(scriptsDirectories) {
-        this._scriptsDirectories = scriptsDirectories;
+    constructor(preferencesService) {
+        this._preferencesService = preferencesService;
+
+        const dataDirectory = preferencesService.getDataDirectory();
+        const pluginsDirectory = join(dataDirectory, 'plugins');
+        const internalPluginsDirectory = join(__dirname, '../scripts');
+        this._scriptsDirectories = [
+            internalPluginsDirectory,
+            pluginsDirectory
+        ];
     }
 
     async getMetaScripts() {

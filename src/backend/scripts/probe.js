@@ -12,7 +12,11 @@ class ProbeMetaScript {
 
     async metamain(collector) {
         const file = collector.getMetaDataItem('file');
-        collector.appendMetaData('probe', await this._ffprobe(file));
+        const probeResults = await this._ffprobe(file);
+        if (Object.keys(probeResults).length === 0) {
+            throw new Error('ffprobe returned no data');
+        }
+        collector.appendMetaData('probe', probeResults);
     }
 
     async _ffprobe(file) {
