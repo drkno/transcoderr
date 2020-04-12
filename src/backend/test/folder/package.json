@@ -1,0 +1,7 @@
+{
+    "name": "folder name",
+    "description": "folder description",
+    "version": "1.0.0",
+    "scriptTypes": ["pre"],
+    "main": "test.js"
+}

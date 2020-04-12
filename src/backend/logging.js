@@ -8,7 +8,21 @@ module.exports = () => {
 
     const logger = createLogger({
         level: process.env.LOG_LEVEL || 'info',
-        format: format.simple(),
+        format: format.combine(
+            format.timestamp({
+                format: 'YYYY-MM-DD HH:MM:SS'
+            }),
+            format.splat(),
+            format.colorize({ all: false }),
+            format.printf(info => {
+                if (typeof(info.message) !== 'string') {
+                    try {
+                        info.message = JSON.stringify(info.message, null, 4);
+                    } catch(e) {}
+                }
+                return `[${info.timestamp}] [${info.level}] ${info.message}`;
+            }),
+        ),
         transports: [
             new transports.Console()
         ]

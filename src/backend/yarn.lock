@@ -459,6 +459,11 @@ readable-stream@^3.1.1:
     string_decoder "^1.1.1"
     util-deprecate "^1.0.1"
 
+require-like@0.1.2:
+  version "0.1.2"
+  resolved "https://registry.yarnpkg.com/require-like/-/require-like-0.1.2.tgz#ad6f30c13becd797010c468afa775c0c0a6b47fa"
+  integrity sha1-rW8wwTvs15cBDEaK+ndcDAprR/o=
+
 safe-buffer@5.1.2, safe-buffer@~5.1.0, safe-buffer@~5.1.1:
   version "5.1.2"
   resolved "https://registry.yarnpkg.com/safe-buffer/-/safe-buffer-5.1.2.tgz#991ec69d296e0313747d59bdfd2b745c35f8828d"
@@ -473,6 +478,14 @@ safe-buffer@~5.2.0:
   version "2.1.2"
   resolved "https://registry.yarnpkg.com/safer-buffer/-/safer-buffer-2.1.2.tgz#44fa161b0187b9549dd84bb91802f9bd8385cd6a"
   integrity sha512-YZo3K82SD7Riyi0E1EQPojLz7kpepnSQI9IyPbHHg1XXXevb5dJI7tpyN2ADxGcQbHG7vcyRHk0cbwqcQriUtg==
+
+sandboxed-module@^2.0.4:
+  version "2.0.4"
+  resolved "https://registry.yarnpkg.com/sandboxed-module/-/sandboxed-module-2.0.4.tgz#c02f4458bd69e13989e0fae58d26cd73a2615efb"
+  integrity sha512-AwEPOdO8mg/wJjr876yCHP2DHqVN0MaggEXhp6IIf3bcI5cYoQl9QrrCHSrvToHjvdEiS5x4TVZRgjD2bEmNTA==
+  dependencies:
+    require-like "0.1.2"
+    stack-trace "0.0.9"
 
 send@0.17.1:
   version "0.17.1"
@@ -514,6 +527,11 @@ simple-swizzle@^0.2.2:
   integrity sha1-pNprY1/8zMoz9w0Xy5JZLeleVXo=
   dependencies:
     is-arrayish "^0.3.1"
+
+stack-trace@0.0.9:
+  version "0.0.9"
+  resolved "https://registry.yarnpkg.com/stack-trace/-/stack-trace-0.0.9.tgz#a8f6eaeca90674c333e7c43953f275b451510695"
+  integrity sha1-qPbq7KkGdMMz58Q5U/J1tFFRBpU=
 
 stack-trace@0.0.x:
   version "0.0.10"
