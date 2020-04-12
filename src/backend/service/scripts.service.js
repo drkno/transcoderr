@@ -50,7 +50,8 @@ class ScriptsService {
     }
 
     async _listScripts() {
-        return await Promise.all(this._scriptsDirectories.map(dir => this._listScriptsInDirectory(dir)));
+        return (await Promise.all(this._scriptsDirectories.map(dir => this._listScriptsInDirectory(dir))))
+            .flatMap(a => a);
     }
 
     async _listScriptsInDirectory(scriptsDirectory) {

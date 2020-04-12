@@ -1,9 +1,10 @@
 const EventEmitter = require('events');
 const JobRecord = require('../model/job-record');
-const { MetaCollector, PreCollector, ExecCollector, PostCollector } = require('../model/collector');
+const { MetaCollector, PreCollector, FilterCollector, ExecCollector, PostCollector } = require('../model/collector');
 
 class ExecutorService extends EventEmitter {
     constructor(scriptsService) {
+        super();
         this._scriptsService = scriptsService;
         this._jobRecord = [];
         this._inProgressJobs = [];

@@ -13,6 +13,7 @@ class ProbeMetaScript {
     async filtermain(collector) {
         if (collector.shouldDelete()) {
             collector.vetoExec();
+            LOG.warn(`Deleting '${collector.getMetaData().file}'`);
             unlinkSync(collector.getMetaData().file);
         }
     }

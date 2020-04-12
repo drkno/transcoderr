@@ -1,7 +1,7 @@
-const ProbeService = require('../scripts/probe');
+const ExecutorService = require('./executor.service');
 const ScriptsService = require('./scripts.service');
 
 module.exports = {
-    ProbeService,
+    ExecutorService,
     ScriptsService
 };

@@ -3,7 +3,7 @@ const Collector = require('./base');
 class ExecCollector extends Collector {
     constructor(filterCollector) {
         super();
-        this._metaData = filterCollector.getAllMetaData();
+        this._metaData = filterCollector.getMetaData();
         this._ffmpegOptions = filterCollector.getFfmpegOptions();
     }
 

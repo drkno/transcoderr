@@ -3,6 +3,7 @@ const { randomBytes } = require('crypto');
 
 class JobRecord extends EventEmitter {
     constructor(file) {
+        super();
         this.file = file;
         this.jobId = this._generateJobId();
         this.state = 'new';
@@ -42,17 +43,17 @@ class JobRecord extends EventEmitter {
     }
 
     setScriptState(script, state, err) {
-        this.state.scripts[script] = {
+        this.scripts[script] = {
             state,
             err
         };
-        (err ? LOG.info : LOG.error)(`Job ${this.getJobId()} - ${script} changed state to '${state}'${err ? ' ' + err.stack : void(0)}`);
+        (err ? LOG.error : LOG.info)(`Job ${this.getJobId()} - ${script} changed state to '${state}'${err ? ' - ' + err.stack : ''}`);
         this._jobChanged('script-state', 'state', state, err);
     }
 
     emitCreatedEvent() {
         this._jobChanged('job-state', 'state', 'new');
-        LOG.info(`New job ${job.getJobId()} ('${job.getFile()}') created`);
+        LOG.info(`New job ${this.getJobId()} ('${this.getFile()}') created`);
     }
     
     _generateJobId() {
