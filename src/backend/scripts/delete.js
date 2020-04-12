@@ -1,12 +1,12 @@
 const { unlinkSync } = require('fs');
 
-class ProbeMetaScript {
+class DeleteFilterScript {
     describe() {
         return {
             name: 'delete',
             description: 'removes files marked for deletion',
             version: '1.0.0',
-            type: ['filter']
+            types: ['filter']
         };
     }
 
@@ -19,4 +19,4 @@ class ProbeMetaScript {
     }
 }
 
-module.exports = new ProbeMetaScript();
+module.exports = new DeleteFilterScript();

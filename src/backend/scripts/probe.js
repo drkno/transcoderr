@@ -6,7 +6,7 @@ class ProbeMetaScript {
             name: 'ffprobe',
             description: 'adds ffprobe data to events',
             version: '1.0.0',
-            type: ['meta']
+            types: ['meta']
         };
     }
 

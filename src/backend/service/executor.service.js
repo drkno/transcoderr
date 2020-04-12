@@ -91,10 +91,17 @@ class ExecutorService extends EventEmitter {
             }
 
             const scriptInfo = await script.getScriptInfo();
-            const scriptPhase = `'${scriptInfo.name}@${scriptInfo.version}':${phaseName}`;
+            const scriptPhase = `${scriptInfo.name}@${scriptInfo.version}:${phaseName}`;
             try {
                 job.setScriptState(scriptPhase, 'started');
-                script.getScript()[phaseName + 'main'](collector);
+
+                const mainMethodName = phaseName + 'main';
+                const sandboxedScript = await script.getScript();
+                if (sandboxedScript[mainMethodName]) {
+                    sandboxedScript[mainMethodName](collector);
+                } else {
+                    throw new Error(`'${scriptPhase}' is of type '${phaseName}' but does not have method '${mainMethodName}'.`);
+                }
                 job.setScriptState(scriptPhase, 'success');
             } catch(e) {
                 job.setScriptState(scriptPhase, 'failure', e);

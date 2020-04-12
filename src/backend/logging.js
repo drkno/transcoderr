@@ -27,6 +27,14 @@ module.exports = () => {
             new transports.Console()
         ]
     });
+
+    process.on('unhandledRejection', reason => {
+        LOG.error(reason.stack);
+    });
+
+    process.on('uncaughtException', reason => {
+        LOG.error(reason.stack);
+    });
     
     module.exports = logger;
     global.LOG = logger;

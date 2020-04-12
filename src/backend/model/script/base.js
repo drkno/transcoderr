@@ -72,6 +72,7 @@ class Script {
                     case 'pre': return ScriptType.PRE;
                     case 'post': return ScriptType.POST;
                     case 'exec': return ScriptType.EXEC;
+                    case 'filter': return ScriptType.FILTER;
                     default: return false;
                 }
             })

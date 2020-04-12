@@ -6,7 +6,7 @@ class DimensionMetaScript {
             name: 'dimensions',
             description: 'adds actual and reported video dimensions to events',
             version: '1.0.0',
-            type: ['meta']
+            types: ['meta']
         };
     }
 

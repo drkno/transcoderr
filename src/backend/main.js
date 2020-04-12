@@ -21,4 +21,6 @@ const { ScriptsService, ExecutorService } = require('./service');
         "C:\\Users\\Matthew\\Documents\\logo_round.png",
         "C:\\Users\\Matthew\\Downloads\\The Mandalorian - [01x03] - Chapter 3.mkv"
     ]));
+
+    LOG.info((await scriptsService.getAllScripts()).length);
 })();
