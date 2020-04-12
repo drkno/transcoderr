@@ -80,7 +80,7 @@ class ExecutorService extends EventEmitter {
     }
 
     async _executePhase(phaseName, job, scripts, collector) {
-        if (job.isAborted()) {
+        if (job.isAborted() || scripts.length === 0) {
             return;
         }
         job.setState(phaseName);
@@ -98,13 +98,16 @@ class ExecutorService extends EventEmitter {
                 const mainMethodName = phaseName + 'main';
                 const sandboxedScript = await script.getScript();
                 if (sandboxedScript[mainMethodName]) {
-                    sandboxedScript[mainMethodName](collector);
+                    await sandboxedScript[mainMethodName](collector);
                 } else {
                     throw new Error(`'${scriptPhase}' is of type '${phaseName}' but does not have method '${mainMethodName}'.`);
                 }
                 job.setScriptState(scriptPhase, 'success');
             } catch(e) {
                 job.setScriptState(scriptPhase, 'failure', e);
+                if (!scriptInfo.failureSafe) {
+                    job.abort();
+                }
             }
         }));
     }

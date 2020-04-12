@@ -11,22 +11,10 @@ class DimensionMetaScript {
     }
 
     async metamain(collector) {
-        let dim;
-        try {
-            const file = collector.getMetaDataItem('file');
-            dim = await this._detectCrop(file);
-            if (dim.x === 0 || dim.y === 0) {
-                throw new Error('Could not detect dimensions');
-            }
-        } catch (e) {
-            LOG.error(e);
-            dim = {
-                error: 'Could not detect dimensions',
-                x: -1,
-                y: -1,
-                xOffeset: 0,
-                yOffset: 0
-            };
+        const file = collector.getMetaDataItem('file');
+        const dim = await this._detectCrop(file);
+        if (dim.x === 0 || dim.y === 0) {
+            throw new Error('Could not detect dimensions');
         }
         collector.appendMetaData('dimensions', dim);
     }
@@ -42,13 +30,21 @@ class DimensionMetaScript {
 
     async _probe(file, fromTime) {
         const childProcess = new ChildProcess('ffmpeg',
-            ['-hide_banner', '-ss', fromTime, '-i', file, '-to', '00:00:05', '-vf', 'cropdetect', '-    f', 'null', '-']
+            ['-hide_banner', '-ss', fromTime, '-i', file, '-to', '00:00:05', '-vf', 'cropdetect', '-f', 'null', '-']
         );
         return await childProcess.getStdErr();
     }
 
+    async _getDuration(file) {
+        const childProcess = new ChildProcess('ffprobe',
+            ['-hide_banner', '-print_format', 'json', '-v', 'error', '-show_entries', 'format=duration', '-of', 'default=noprint_wrappers=1:nokey=1', file]
+        );
+        return await childProcess.getStdOut();
+    }
+
     async _detectCrop(file) {
-        const tenth = file.meta.Duration / 10;
+        const duration = await this._getDuration(file);
+        const tenth = duration / 10;
         const probePoints = [
             tenth,
             tenth * 5,
