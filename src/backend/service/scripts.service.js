@@ -18,6 +18,10 @@ class ScriptsService {
         return await this._getAllScriptsOfType(ScriptType.PRE);
     }
 
+    async getFilterScripts() {
+        return await this._getAllScriptsOfType(ScriptType.FILTER);
+    }
+
     async getPostScripts() {
         return await this._getAllScriptsOfType(ScriptType.POST);
     }

@@ -10,7 +10,7 @@ class ProbeMetaScript {
         };
     }
 
-    async premain(collector) {
+    async metamain(collector) {
         const file = collector.getMetaDataItem('file');
         collector.appendMetaData('probe', await this._ffprobe(file));
     }

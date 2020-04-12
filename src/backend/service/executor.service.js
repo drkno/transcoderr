@@ -2,7 +2,7 @@ const EventEmitter = require('events');
 const JobRecord = require('../model/job-record');
 const { MetaCollector, PreCollector, ExecCollector, PostCollector } = require('../model/collector');
 
-class CollectorService extends EventEmitter {
+class ExecutorService extends EventEmitter {
     constructor(scriptsService) {
         this._scriptsService = scriptsService;
         this._jobRecord = [];
@@ -41,6 +41,7 @@ class CollectorService extends EventEmitter {
 
         const metaScripts = await this._scriptsService.getMetaScripts();
         const preScripts = await this._scriptsService.getPreScripts();
+        const filterScripts = await this._scriptsService.getFilterScripts();
         const execScripts = await this._scriptsService.getExecScripts();
         const postScripts = await this._scriptsService.getPostScripts();
 
@@ -51,10 +52,19 @@ class CollectorService extends EventEmitter {
             const preCollector = new PreCollector(metaCollector);
             await this._executePhase('pre', job, preScripts, preCollector);
 
-            const execCollector = new ExecCollector(preCollector);
-            await this._executePhase('exec', job, execScripts, execCollector);
+            const filterCollector = new FilterCollector(preCollector);
+            await this._executePhase('filter', job, filterScripts, filterCollector);
 
-            const postCollector = new PostCollector(execCollector);
+            let postCollector;
+            if (filterCollector.shouldExec()) {
+                const execCollector = new ExecCollector(filterCollector);
+                await this._executePhase('exec', job, execScripts, execCollector);
+
+                postCollector = new PostCollector(execCollector);
+            } else {
+                postCollector = new PostCollector(filterCollector);
+            }
+
             await this._executePhase('post', job, postScripts, postCollector);
 
             job.setState('complete');
@@ -92,4 +102,4 @@ class CollectorService extends EventEmitter {
     }
 }
 
-module.exports = CollectorService;
+module.exports = ExecutorService;

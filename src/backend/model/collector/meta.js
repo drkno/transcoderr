@@ -17,11 +17,11 @@ class MetaCollector extends Collector {
     }
 
     getAllMetaData() {
-        return clone(this._metaData);
+        return this._clone(this._metaData);
     }
 
     getMetaDataItem(item) {
-        return clone(this._metaData[item]);
+        return this._clone(this._metaData[item]);
     }
 }
 

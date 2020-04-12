@@ -10,7 +10,7 @@ class DimensionMetaScript {
         };
     }
 
-    async premain(collector) {
+    async metamain(collector) {
         let dim;
         try {
             const file = collector.getMetaDataItem('file');
