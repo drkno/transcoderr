@@ -1,26 +1,24 @@
 const EventEmitter = require('events');
-const JobRecord = require('../model/job-record');
+const JobState = require('../model/job-state');
+const JobScriptState = require('../model/job-script-state');
 const { MetaCollector, PreCollector, FilterCollector, ExecCollector, PostCollector } = require('../model/collector');
 
 class ExecutorService extends EventEmitter {
-    constructor(scriptsService) {
+    constructor(scriptsService, jobsService) {
         super();
+        this._jobsService = jobsService;
         this._scriptsService = scriptsService;
-        this._jobRecord = [];
         this._inProgressJobs = [];
     }
 
-    abort(jobId) {
+    async abort(jobId) {
         if (jobId) {
-            this._inProgressJobs.filter(job => job.getJobId() === jobId)
-                .forEach(job => job.abort());
+            await Promise.all(this._inProgressJobs
+                .filter(job => job.getJobId() === jobId)
+                .map(job => this._jobsService.updateJobState(job, JobState.ABORT)));
         } else {
-            this._inProgressJobs.forEach(job => job.abort());
+            await Promise.all(this._inProgressJobs.map(job => this._jobsService.updateJobState(job, JobState.ABORT)));
         }
-    }
-
-    getJobRecord() {
-        return this._jobRecord;
     }
 
     async execute(files) {
@@ -28,15 +26,9 @@ class ExecutorService extends EventEmitter {
             files = [files];
         }
 
-        const newJobs = (Array.isArray(files) ? files : [files])
-            .map(file => new JobRecord(file))
+        const newJobs = (await this._jobsService.getJobs(files))
             .map(job => {
-                this._jobRecord.push(job);
                 this._inProgressJobs.push(job);
-                job.on('jobChanged', change => {
-                    setImmediate(() => this.emit('jobChanged', change));
-                });
-                job.emitCreatedEvent();
                 return job;
             });
 
@@ -48,27 +40,27 @@ class ExecutorService extends EventEmitter {
 
         const tasks = newJobs.map(async(job) => {
             const metaCollector = new MetaCollector(job.getFile());
-            await this._executePhase('meta', job, metaScripts, metaCollector);
+            await this._executeState(JobState.META, job, metaScripts, metaCollector);
 
             const preCollector = new PreCollector(metaCollector);
-            await this._executePhase('pre', job, preScripts, preCollector);
+            await this._executeState(JobState.PRE, job, preScripts, preCollector);
 
             const filterCollector = new FilterCollector(preCollector);
-            await this._executePhase('filter', job, filterScripts, filterCollector);
+            await this._executeState(JobState.FILTER, job, filterScripts, filterCollector);
 
             let postCollector;
             if (filterCollector.shouldExec()) {
                 const execCollector = new ExecCollector(filterCollector);
-                await this._executePhase('exec', job, execScripts, execCollector);
+                await this._executeState(JobState.EXEC, job, execScripts, execCollector);
 
                 postCollector = new PostCollector(execCollector);
             } else {
                 postCollector = new PostCollector(filterCollector);
             }
 
-            await this._executePhase('post', job, postScripts, postCollector);
+            await this._executeState(JobState.POST, job, postScripts, postCollector);
 
-            job.setState('complete');
+            await this._jobsService.updateJobState(job, JobState.COMPLETE);
             const index = this._inProgressJobs.indexOf(job);
             if (index >= 0) {
                 this._inProgressJobs.splice(index, 1);
@@ -79,11 +71,11 @@ class ExecutorService extends EventEmitter {
         return await Promise.all(tasks);
     }
 
-    async _executePhase(phaseName, job, scripts, collector) {
+    async _executeState(jobState, job, scripts, collector) {
         if (job.isAborted() || scripts.length === 0) {
             return;
         }
-        job.setState(phaseName);
+        await this._jobsService.updateJobState(job, jobState);
 
         return Promise.all(scripts.map(async(script) => {
             if (job.isAborted()) {
@@ -91,22 +83,22 @@ class ExecutorService extends EventEmitter {
             }
 
             const scriptInfo = await script.getScriptInfo();
-            const scriptPhase = `${scriptInfo.name}@${scriptInfo.version}:${phaseName}`;
+            const scriptPhase = `${scriptInfo.name}@${scriptInfo.version}:${jobState}`;
             try {
-                job.setScriptState(scriptPhase, 'started');
+                await this._jobsService.updateScriptExecutionState(job, scriptPhase, JobScriptState.STARTED);
 
-                const mainMethodName = phaseName + 'main';
+                const mainMethodName = jobState + 'main';
                 const sandboxedScript = await script.getScript();
                 if (sandboxedScript[mainMethodName]) {
                     await sandboxedScript[mainMethodName](collector);
                 } else {
-                    throw new Error(`'${scriptPhase}' is of type '${phaseName}' but does not have method '${mainMethodName}'.`);
+                    throw new Error(`'${scriptPhase}' is of type '${jobState}' but does not have method '${mainMethodName}'.`);
                 }
-                job.setScriptState(scriptPhase, 'success');
+                await this._jobsService.updateScriptExecutionState(job, scriptPhase, JobScriptState.SUCCESS);
             } catch(e) {
-                job.setScriptState(scriptPhase, 'failure', e);
+                await this._jobsService.updateScriptExecutionState(job, scriptPhase, JobScriptState.FAILED, e);
                 if (!scriptInfo.failureSafe) {
-                    job.abort();
+                    await this._jobsService.updateJobState(job, JobState.ABORT);
                 }
             }
         }));

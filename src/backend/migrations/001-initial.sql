@@ -13,9 +13,9 @@ CREATE TABLE Job (
     id          INTEGER PRIMARY KEY,
     state       TEXT    NOT NULL,
     file        TEXT    NOT NULL,
-    lastRun     TEXT    NOT NULL,
-    lastSuccess TEXT    NOT NULL,
-    lastFailure TEXT    NOT NULL,
+    lastRun     TEXT,
+    lastSuccess TEXT,
+    lastFailure TEXT,
     runCount    INTEGER NOT NULL,
 
     CONSTRAINT job_fk_state FOREIGN KEY (state)
@@ -32,20 +32,31 @@ CREATE TABLE Plugin (
     CONSTRAINT plugin_ck_enabled CHECK (enabled IN (0, 1))
 );
 
+CREATE TABLE ExecutionStates (
+    id          INTEGER PRIMARY KEY,
+    state       TEXT    NOT NULL UNIQUE,
+    name        TEXT    NOT NULL,
+    description TEXT    NOT NULL
+);
+
 CREATE TABLE JobExecutions (
     id          INTEGER PRIMARY KEY,
     jobId       INTEGER NOT NULL,
     pluginId    INTEGER NOT NULL,
-    successful  INTEGER NOT NULL,
+    state       INTEGER NOT NULL,
     context     TEXT,
 
-    CONSTRAINT jobexecutions_ck_successful CHECK (successful IN (0, 1)),
+    CONSTRAINT jobexecutions_ck_unique UNIQUE (jobId, pluginId)
     CONSTRAINT jobexecutions_fk_jobId FOREIGN KEY (jobId)
         REFERENCES Job(id)
         ON UPDATE CASCADE
         ON DELETE CASCADE,
     CONSTRAINT jobexecutions_fk_pluginId FOREIGN KEY (pluginId)
         REFERENCES Plugin(id)
+        ON UPDATE CASCADE
+        ON DELETE CASCADE,
+    CONSTRAINT jobexecutions_fk_state FOREIGN KEY (state)
+        REFERENCES ExecutionStates(state)
         ON UPDATE CASCADE
         ON DELETE CASCADE
 );
@@ -64,6 +75,11 @@ INSERT INTO States (state, name, description) VALUES ('exec', 'Running transcode
 INSERT INTO States (state, name, description) VALUES ('post', 'Post-execution analysis', 'Analysing changes that were made and notifying downstream services.');
 INSERT INTO States (state, name, description) VALUES ('complete', 'Complete', 'The job is complete.');
 INSERT INTO States (state, name, description) VALUES ('abort', 'Aborted', 'The job was aborted.');
+
+INSERT INTO ExecutionStates (state, name, description) VALUES ('started', 'Script Started', 'The script has started executing');
+INSERT INTO ExecutionStates (state, name, description) VALUES ('successful', 'Successful', 'Script execution was successful');
+INSERT INTO ExecutionStates (state, name, description) VALUES ('failed', 'Failed', 'Script execution failed');
+INSERT INTO ExecutionStates (state, name, description) VALUES ('unknown', 'Unknown', 'The script is in an unknown state');
 
 --------------------------------------------------------------------------------
 -- Down

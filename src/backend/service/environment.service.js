@@ -38,6 +38,10 @@ class EnvironmentService {
         return join(__dirname, '../migrations');
     }
 
+    isDatabaseDebugModeEnabled() {
+        return !!this._environment.DEBUG_DATABASE_CALLS || false;
+    }
+
     getPort() {
         return this._environment.PORT || 4300;
     }

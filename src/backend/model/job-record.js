@@ -1,12 +1,15 @@
-const EventEmitter = require('events');
-const { randomBytes } = require('crypto');
+const JobState = require('./job-state');
 
-class JobRecord extends EventEmitter {
-    constructor(file) {
-        super();
-        this.file = file;
-        this.jobId = this._generateJobId();
-        this.state = 'new';
+class JobRecord {
+    constructor(record) {
+        this.jobId = record.id;
+        this.state = record.state;
+        this.file = record.file;
+        this.lastRun = record.lastRun;
+        this.lastSuccess = record.lastSuccess;
+        this.lastFailure = record.lastFailure;
+        this.runCount = record.runCount;
+
         this.scripts = {};
     }
 
@@ -22,53 +25,36 @@ class JobRecord extends EventEmitter {
         return this.state;
     }
 
+    getLastRun() {
+        return this.lastRun;
+    }
+
+    getLastSuccess() {
+        return this.lastSuccess;
+    }
+
+    getLastFailure() {
+        return this.lastFailure;
+    }
+
+    getRunCount() {
+        return this.lastRun;
+    }
+
+    getScriptStatus() {
+        return this.scripts;
+    }
+
     isAborted() {
-        return this.state === 'abort';
+        return this.state === JobState.ABORT;
     }
 
-    abort() {
-        if (!this.isAborted()) {
-            this.state = 'abort';
-            LOG.warn(`Job ${this.getJobId()} aborted`);
-            this._jobChanged('job-state', 'state', 'abort');
+    async __applyUpdatedState(record, scripts) {
+        for (let key in record) {
+            this[key] = record[key];
         }
-    }
 
-    setState(newState) {
-        if (!this.isAborted()) {
-            this.state = newState;
-            LOG.info(`Job ${this.getJobId()} changed state to '${newState}'`);
-            this._jobChanged('job-state', 'state', newState);
-        }
-    }
-
-    setScriptState(script, state, err) {
-        this.scripts[script] = {
-            state,
-            err
-        };
-        (err ? LOG.error : LOG.info)(`Job ${this.getJobId()} - ${script} changed state to '${state}'${err ? ' - ' + err.stack : ''}`);
-        this._jobChanged('script-state', 'state', state, err);
-    }
-
-    emitCreatedEvent() {
-        this._jobChanged('job-state', 'state', 'new');
-        LOG.info(`New job ${this.getJobId()} ('${this.getFile()}') created`);
-    }
-    
-    _generateJobId() {
-        return randomBytes(16).toString("hex");
-    }
-
-    _jobChanged(changeType, changeKey, changeValue, errors) {
-        this.emit('jobChanged', {
-            jobId: this.getJobId(),
-            file: this.getFile(),
-            changeType,
-            changeKey,
-            changeValue,
-            errors
-        });
+        this.scripts = Object.assign(record, scripts);
     }
 
     toString() {
