@@ -14,6 +14,10 @@ class PackagePlugin extends Plugin {
         this._packageJsonHash = null;
     }
 
+    async getChecksum() {
+        return this._packageJsonHash;
+    }
+
     async getPluginInfo() {
         const json = await this._getJsonContents();
         return {

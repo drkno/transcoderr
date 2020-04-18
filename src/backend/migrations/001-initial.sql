@@ -26,7 +26,7 @@ CREATE TABLE Job (
 
 CREATE TABLE Plugin (
     id          INTEGER PRIMARY KEY,
-    name        TEXT    NOT NULL,
+    name        TEXT    NOT NULL UNIQUE,
     enabled     INTEGER NOT NULL DEFAULT 1,
     checksum    TEXT,
 
@@ -44,7 +44,7 @@ CREATE TABLE JobExecutions (
     id          INTEGER PRIMARY KEY,
     jobId       INTEGER NOT NULL,
     pluginId    INTEGER NOT NULL,
-    jobState    TEXT    NOT NULL
+    jobState    TEXT    NOT NULL,
     state       TEXT    NOT NULL,
     context     TEXT,
 

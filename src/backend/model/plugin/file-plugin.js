@@ -8,6 +8,10 @@ class FilePlugin extends Plugin {
         this._checksum = null;
     }
 
+    async getChecksum() {
+        return this._checksum;
+    }
+
     async getPluginInfo() {
         const plugin = await this.getPlugin();
         const descriptor = Object.assign({

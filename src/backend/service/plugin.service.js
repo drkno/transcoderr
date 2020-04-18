@@ -62,11 +62,39 @@ class PluginService {
     }
 
     async _createOrUpdatePlugins(plugins) {
-        return await Promise.all(plugins.map(plugin => this._createOrUpdatePlugin(plugin)));
+        const checksumData = await this._databaseService.get(`SELECT name, checksum FROM Plugins`);
+        const checksumMap = checksumData.reduce((acc, curr) => (acc[curr.name] = curr.checksum, curr), {});
+
+        return await Promise.all(plugins.map(plugin => this._createOrUpdatePlugin(plugin, )));
     }
 
-    async _createOrUpdatePlugin(plugin) {
-        this._databaseService.
+    async _createOrUpdatePlugin(plugin, checksumLookup = null) {
+        const pluginInfo = await plugin.getPluginInfo();
+        if (checksumLookup == null) {
+            const results = this._databaseService.get(`SELECT checksum FROM Plugins WHERE name = :name`, {
+                ':name': pluginInfo.name
+            });
+            if (results.length === 1) {
+                checksumLookup = {
+                    [pluginInfo.name]: results[0].checksum
+                };
+            }
+        }
+
+        if (checksumLookup[plugin.name] !== plugin.getChecksum()) {
+            await this._databaseService.run(`
+                INSERT INTO Plugins (name, checksum)
+                VALUES (:name, :checksum)
+                ON CONFLICT (name) DO UPDATE SET
+                checksum = :checksum
+                WHERE name = :name
+            `, {
+                ':name': pluginInfo.name,
+                ':checksum': plugin.getChecksum()
+            });
+
+            LOG.warn(`New/updated plugin detected: ${plugin.name}`);
+        }
     }
 
     async _listPluginsInDirectory(pluginsDirectory) {
