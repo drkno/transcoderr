@@ -12,7 +12,7 @@ class EnvironmentService {
 
     getDataDirectory() {
         const directory = this._environment.DATA_DIRECTORY || './temp';
-        this._ensureExists('dataDirectory');
+        this._ensureExists('dataDirectory', directory);
         return directory;
     }
 
@@ -22,7 +22,7 @@ class EnvironmentService {
 
     getExternalPluginDirectory() {
         const directory = join(this.getDataDirectory(), 'plugins');
-        this._ensureExists('pluginDirectory');
+        this._ensureExists('pluginDirectory', directory);
         return directory;
     }
 

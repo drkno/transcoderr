@@ -1,9 +1,10 @@
 const { join } = require('path');
 
 const DatabaseService = require('./environment.service');
-const PreferencesService = require('./preferences.service');
 const EnvironmentService = require('./environment.service');
 const ExecutorService = require('./executor.service');
+const JobsService = require('./jobs.service');
+const PreferencesService = require('./preferences.service');
 const ScriptsService = require('./scripts.service');
 
 class ServiceFactory {
@@ -11,14 +12,6 @@ class ServiceFactory {
         return this._lazyInstantiate('_database', () => {
             const environmentService = this.getEnvironmentService();
             return new DatabaseService(environmentService);
-        });
-    }
-
-    getPreferencesService() {
-        return this._lazyInstantiate('_preferences', () => {
-            const environmentService = this.getEnvironmentService();
-            const databaseService = this.getDatabaseService();
-            return new PreferencesService(environmentService, databaseService);
         });
     }
 
@@ -30,6 +23,21 @@ class ServiceFactory {
         return this._lazyInstantiate('_executor', () => {
             const scriptService = this.getScriptService();
             return new ExecutorService(scriptService);
+        });
+    }
+
+    getJobsService() {
+        return this._lazyInstantiate('_jobs', () => {
+            const databaseService = this.getDatabaseService();
+            return new JobsService(databaseService);
+        });
+    }
+
+    getPreferencesService() {
+        return this._lazyInstantiate('_preferences', () => {
+            const environmentService = this.getEnvironmentService();
+            const databaseService = this.getDatabaseService();
+            return new PreferencesService(environmentService, databaseService);
         });
     }
 
