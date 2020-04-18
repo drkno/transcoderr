@@ -10,7 +10,7 @@ class JobRecord {
         this.lastFailure = record.lastFailure;
         this.runCount = record.runCount;
 
-        this.scripts = {};
+        this.plugins = {};
     }
 
     getJobId() {
@@ -41,20 +41,20 @@ class JobRecord {
         return this.lastRun;
     }
 
-    getScriptStatus() {
-        return this.scripts;
+    getPluginStatus() {
+        return this.plugins;
     }
 
     isAborted() {
         return this.state === JobState.ABORT;
     }
 
-    async __applyUpdatedState(record, scripts) {
+    async __applyUpdatedState(record, plugins) {
         for (let key in record) {
             this[key] = record[key];
         }
 
-        this.scripts = Object.assign(record, scripts);
+        this.plugins = Object.assign(record, plugins);
     }
 
     toString() {

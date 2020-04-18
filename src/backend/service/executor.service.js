@@ -1,13 +1,13 @@
 const EventEmitter = require('events');
 const JobState = require('../model/job-state');
-const JobScriptState = require('../model/job-script-state');
+const JobPluginState = require('../model/job-plugin-state');
 const { MetaCollector, PreCollector, FilterCollector, ExecCollector, PostCollector } = require('../model/collector');
 
 class ExecutorService extends EventEmitter {
-    constructor(scriptsService, jobsService) {
+    constructor(pluginService, jobsService) {
         super();
         this._jobsService = jobsService;
-        this._scriptsService = scriptsService;
+        this._pluginService = pluginService;
         this._inProgressJobs = [];
     }
 
@@ -32,33 +32,33 @@ class ExecutorService extends EventEmitter {
                 return job;
             });
 
-        const metaScripts = await this._scriptsService.getMetaScripts();
-        const preScripts = await this._scriptsService.getPreScripts();
-        const filterScripts = await this._scriptsService.getFilterScripts();
-        const execScripts = await this._scriptsService.getExecScripts();
-        const postScripts = await this._scriptsService.getPostScripts();
+        const metaPlugins = await this._pluginService.getMetaPlugins();
+        const prePlugins = await this._pluginService.getPrePlugins();
+        const filterPlugins = await this._pluginService.getFilterPlugins();
+        const execPlugins = await this._pluginService.getExecPlugins();
+        const postPlugins = await this._pluginService.getPostPlugins();
 
         const tasks = newJobs.map(async(job) => {
             const metaCollector = new MetaCollector(job.getFile());
-            await this._executeState(JobState.META, job, metaScripts, metaCollector);
+            await this._executeState(JobState.META, job, metaPlugins, metaCollector);
 
             const preCollector = new PreCollector(metaCollector);
-            await this._executeState(JobState.PRE, job, preScripts, preCollector);
+            await this._executeState(JobState.PRE, job, prePlugins, preCollector);
 
             const filterCollector = new FilterCollector(preCollector);
-            await this._executeState(JobState.FILTER, job, filterScripts, filterCollector);
+            await this._executeState(JobState.FILTER, job, filterPlugins, filterCollector);
 
             let postCollector;
             if (filterCollector.shouldExec()) {
                 const execCollector = new ExecCollector(filterCollector);
-                await this._executeState(JobState.EXEC, job, execScripts, execCollector);
+                await this._executeState(JobState.EXEC, job, execPlugins, execCollector);
 
                 postCollector = new PostCollector(execCollector);
             } else {
                 postCollector = new PostCollector(filterCollector);
             }
 
-            await this._executeState(JobState.POST, job, postScripts, postCollector);
+            await this._executeState(JobState.POST, job, postPlugins, postCollector);
 
             await this._jobsService.updateJobState(job, JobState.COMPLETE);
             const index = this._inProgressJobs.indexOf(job);
@@ -71,33 +71,33 @@ class ExecutorService extends EventEmitter {
         return await Promise.all(tasks);
     }
 
-    async _executeState(jobState, job, scripts, collector) {
-        if (job.isAborted() || scripts.length === 0) {
+    async _executeState(jobState, job, plugins, collector) {
+        if (job.isAborted() || plugins.length === 0) {
             return;
         }
         await this._jobsService.updateJobState(job, jobState);
 
-        return Promise.all(scripts.map(async(script) => {
+        return Promise.all(plugins.map(async(plugin) => {
             if (job.isAborted()) {
                 return;
             }
 
-            const scriptInfo = await script.getScriptInfo();
-            const scriptPhase = `${scriptInfo.name}@${scriptInfo.version}:${jobState}`;
+            const pluginId = await plugin.getPluginId();
             try {
-                await this._jobsService.updateScriptExecutionState(job, scriptPhase, JobScriptState.STARTED);
+                await this._jobsService.updatePluginExecutionState(job, pluginId, jobState, JobPluginState.STARTED);
 
                 const mainMethodName = jobState + 'main';
-                const sandboxedScript = await script.getScript();
-                if (sandboxedScript[mainMethodName]) {
-                    await sandboxedScript[mainMethodName](collector);
+                const sandboxedPlugin = await plugin.getPlugin();
+                if (sandboxedPlugin[mainMethodName]) {
+                    await sandboxedPlugin[mainMethodName](collector);
                 } else {
-                    throw new Error(`'${scriptPhase}' is of type '${jobState}' but does not have method '${mainMethodName}'.`);
+                    throw new Error(`'${pluginId}' is of type '${jobState}' but does not have method '${mainMethodName}'.`);
                 }
-                await this._jobsService.updateScriptExecutionState(job, scriptPhase, JobScriptState.SUCCESS);
+                await this._jobsService.updatePluginExecutionState(job, pluginId, jobState, JobPluginState.SUCCESS);
             } catch(e) {
-                await this._jobsService.updateScriptExecutionState(job, scriptPhase, JobScriptState.FAILED, e);
-                if (!scriptInfo.failureSafe) {
+                await this._jobsService.updatePluginExecutionState(job, pluginId, jobState, JobPluginState.FAILED, e);
+                const pluginInfo = await plugin.getPluginInfo();
+                if (!pluginInfo.failureSafe) {
                     await this._jobsService.updateJobState(job, JobState.ABORT);
                 }
             }

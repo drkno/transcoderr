@@ -1,7 +1,7 @@
 const EventEmitter = require('events');
 const JobRecord = require('../model/job-record');
 const JobState = require('../model/job-state');
-const JobScriptState = require('../model/job-script-state');
+const JobPluginState = require('../model/job-plugin-state');
 
 class JobsService extends EventEmitter {
     constructor(databaseService) {
@@ -9,10 +9,10 @@ class JobsService extends EventEmitter {
         this._databaseService = databaseService;
     }
 
-    async updateScriptExecutionState(job, pluginId, state, context) {
+    async updatePluginExecutionState(job, pluginId, jobState, state, context) {
         const result = await this._databaseService.run(`
-            INSERT INTO JobExecutions (jobId, pluginId, state, context)
-            VALUES (:jobId, :pluginId, :state, :context)
+            INSERT INTO JobExecutions (jobId, pluginId, jobState, state, context)
+            VALUES (:jobId, :pluginId, :jobState, :state, :context)
             ON CONFLICT (jobId, pluginId) DO UPDATE SET
             state = :state,
             context = :context
@@ -20,6 +20,7 @@ class JobsService extends EventEmitter {
         `, {
             ':jobId': job.getJobId(),
             ':pluginId': pluginId,
+            ':jobState': jobState,
             ':state': state,
             ':context': context || null
         });
@@ -33,18 +34,19 @@ class JobsService extends EventEmitter {
             }
         });
 
-        if (state === JobScriptState.FAILED || state === JobScriptState.UNKNOWN) {
-            LOG.error(`Job ${job.getJobId()} - ${pluginId} changed state to '${state}'${context ? ' - ' + context.stack || context : ''}`);
+        if (state === JobPluginState.FAILED || state === JobPluginState.UNKNOWN) {
+            LOG.error(`Job ${job.getJobId()} - ${pluginId}:${jobState} changed state to '${state}'${context ? ' - ' + context.stack || context : ''}`);
         }
         else {
-            LOG.info(`Job ${job.getJobId()} - ${pluginId} changed state to '${state}'`);
+            LOG.info(`Job ${job.getJobId()} - ${pluginId}:${jobState} changed state to '${state}'`);
         }
 
         this.emit('job-updated', {
             job,
-            changeType: 'job-script-state',
+            changeType: 'job-plugin-state',
             changeDiff: {
                 pluginId,
+                jobState,
                 state,
                 context
             }

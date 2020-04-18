@@ -1,6 +1,6 @@
 const ChildProcess = require('../utils/spawn');
 
-class ProbeMetaScript {
+class ProbeMetaPlugin {
     describe() {
         return {
             name: 'ffprobe',
@@ -28,4 +28,4 @@ class ProbeMetaScript {
     }
 }
 
-module.exports = new ProbeMetaScript();
+module.exports = new ProbeMetaPlugin();

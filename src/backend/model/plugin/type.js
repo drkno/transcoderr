@@ -1,4 +1,4 @@
-class ScriptType {
+class PluginType {
     static META = Symbol('META');
     static EXEC = Symbol('EXEC');
     static POST = Symbol('POST');
@@ -6,4 +6,4 @@ class ScriptType {
     static FILTER = Symbol('FILTER');
 }
 
-module.exports = ScriptType;
+module.exports = PluginType;

@@ -1,6 +1,6 @@
 const ChildProcess = require('../utils/spawn');
 
-class DimensionMetaScript {
+class DimensionMetaPlugin {
     describe() {
         return {
             name: 'dimensions',
@@ -98,4 +98,4 @@ class DimensionMetaScript {
     }
 }
 
-module.exports = new DimensionMetaScript();
+module.exports = new DimensionMetaPlugin();

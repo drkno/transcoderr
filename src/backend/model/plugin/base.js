@@ -1,9 +1,9 @@
 const { createHash } = require('crypto');
 const { createReadStream } = require('fs');
 const SandboxedModule = require('sandboxed-module');
-const ScriptType = require('./type');
+const PluginType = require('./type');
 
-class ScriptLogger {
+class PluginLogger {
     constructor(name) {
         const logNames = ['emerg', 'crit', 'alert', 'warning', 'notice', 'info', 'debug', 'warn', 'http', 'verbose', 'silly', 'error'];
         for (let callName of logNames) {
@@ -23,14 +23,19 @@ class ScriptLogger {
     }
 }
 
-class Script {
+class Plugin {
     constructor() {
-        this._script = null;
+        this._plugin = null;
         this._hasErrors = false;
     }
 
+    async getPluginId() {
+        const pluginInfo = await this.getPluginInfo();
+        return `${pluginInfo.name}@${pluginInfo.version}`;
+    }
+
     shouldReload() {
-        this._script = null;
+        this._plugin = null;
     }
 
     hasErrors() {
@@ -41,17 +46,17 @@ class Script {
         this._hasErrors = true;
     }
 
-    async __getScript(scriptPath, scriptName) {
+    async __getPlugin(pluginPath, pluginName) {
         try {
             const shouldInvalidate = await this.__shouldInvalidate();
-            if (this._script === null || shouldInvalidate) {
-                this._script = SandboxedModule.require(scriptPath, {
+            if (this._plugin === null || shouldInvalidate) {
+                this._plugin = SandboxedModule.require(pluginPath, {
                     globals: {
-                        LOG: new ScriptLogger(scriptName)
+                        LOG: new PluginLogger(pluginName)
                     }
                 });
             }
-            return this._script;
+            return this._plugin;
         } catch (e) {
             this.__setHasErrors();
             LOG.error(e);
@@ -65,14 +70,14 @@ class Script {
         throw new Error('Should be overridden');
     }
 
-    __convertToScriptType(types) {
+    __convertToPluginType(types) {
         return (types || []).map(type => {
                 switch(type) {
-                    case 'meta': return ScriptType.META;
-                    case 'pre': return ScriptType.PRE;
-                    case 'post': return ScriptType.POST;
-                    case 'exec': return ScriptType.EXEC;
-                    case 'filter': return ScriptType.FILTER;
+                    case 'meta': return PluginType.META;
+                    case 'pre': return PluginType.PRE;
+                    case 'post': return PluginType.POST;
+                    case 'exec': return PluginType.EXEC;
+                    case 'filter': return PluginType.FILTER;
                     default: return false;
                 }
             })
@@ -90,4 +95,4 @@ class Script {
     }
 }
 
-module.exports = Script;
+module.exports = Plugin;

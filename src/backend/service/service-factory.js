@@ -4,8 +4,8 @@ const DatabaseService = require('./database.service');
 const EnvironmentService = require('./environment.service');
 const ExecutorService = require('./executor.service');
 const JobsService = require('./jobs.service');
+const PluginService = require('./plugin.service');
 const PreferencesService = require('./preferences.service');
-const ScriptsService = require('./scripts.service');
 
 class ServiceFactory {
     getDatabaseService() {
@@ -22,8 +22,8 @@ class ServiceFactory {
     getExecutorService() {
         return this._lazyInstantiate('_executor', () => {
             const jobsService = this.getJobsService();
-            const scriptService = this.getScriptService();
-            return new ExecutorService(scriptService, jobsService);
+            const pluginService = this.getPluginService();
+            return new ExecutorService(pluginService, jobsService);
         });
     }
 
@@ -34,18 +34,19 @@ class ServiceFactory {
         });
     }
 
+    getPluginService() {
+        return this._lazyInstantiate('_plugins', () => {
+            const databaseService = this.getDatabaseService();
+            const preferencesService = this.getPreferencesService();
+            return new PluginService(preferencesService, databaseService);
+        });
+    }
+
     getPreferencesService() {
         return this._lazyInstantiate('_preferences', () => {
             const environmentService = this.getEnvironmentService();
             const databaseService = this.getDatabaseService();
             return new PreferencesService(environmentService, databaseService);
-        });
-    }
-
-    getScriptService() {
-        return this._lazyInstantiate('_scripts', () => {
-            const preferencesService = this.getPreferencesService();
-            return new ScriptsService(preferencesService);
         });
     }
 

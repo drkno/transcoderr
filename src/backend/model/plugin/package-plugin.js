@@ -1,11 +1,11 @@
 const { readFile } = require('fs');
 const { join, dirname } = require('path');
 const { promisify } = require('util');
-const Script = require('./base');
+const Plugin = require('./base');
 
 const asyncReadFile = promisify(readFile);
 
-class PackageScript extends Script {
+class PackagePlugin extends Plugin {
     constructor(packageJsonLocation) {
         super();
         this._packageJsonLocation = packageJsonLocation;
@@ -14,21 +14,21 @@ class PackageScript extends Script {
         this._packageJsonHash = null;
     }
 
-    async getScriptInfo() {
+    async getPluginInfo() {
         const json = await this._getJsonContents();
         return {
             name: json.name,
             description: json.description,
             version: json.version,
-            types: this.__convertToScriptType(json.scriptTypes)
+            types: this.__convertToPluginType(json.pluginTypes)
         };
     }
 
-    async getScript() {
+    async getPlugin() {
         const json = await this._getJsonContents();
         const dir = dirname(this._packageJsonLocation);
         const main = join(dir, json.main);
-        return await this.__getScript(main, json.name);
+        return await this.__getPlugin(main, json.name);
     }
 
     async __shouldInvalidate() {
@@ -59,4 +59,4 @@ class PackageScript extends Script {
     }
 }
 
-module.exports = PackageScript;
+module.exports = PackagePlugin;

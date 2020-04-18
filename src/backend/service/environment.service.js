@@ -17,7 +17,7 @@ class EnvironmentService {
     }
 
     getInternalPluginDirectory() {
-        return join(__dirname, '../scripts');
+        return join(__dirname, '../plugins');
     }
 
     getExternalPluginDirectory() {

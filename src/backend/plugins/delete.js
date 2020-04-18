@@ -1,6 +1,6 @@
 const { unlinkSync } = require('fs');
 
-class DeleteFilterScript {
+class DeleteFilterPlugin {
     describe() {
         return {
             name: 'delete',
@@ -19,4 +19,4 @@ class DeleteFilterScript {
     }
 }
 
-module.exports = new DeleteFilterScript();
+module.exports = new DeleteFilterPlugin();
