@@ -33,7 +33,6 @@ CREATE TABLE Plugins (
     id          INTEGER PRIMARY KEY,
     loader      TEXT    NOT NULL,
     path        TEXT    NOT NULL UNIQUE,
-    checksum    TEXT,
     enabled     INTEGER NOT NULL DEFAULT 1,
     failureSafe INTEGER NOT NULL DEFAULT 0,
 

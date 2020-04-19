@@ -82,7 +82,7 @@ class ExecutorService extends EventEmitter {
                 return;
             }
 
-            const pluginId = await plugin.getPluginId();
+            const pluginId = plugin.getPluginId();
             try {
                 await this._jobsService.updatePluginExecutionState(job, pluginId, jobState, JobPluginState.STARTED);
 

@@ -26,12 +26,16 @@ class PluginLogger {
 class Plugin {
     constructor() {
         this._plugin = null;
+        this._pluginId = null;
         this._hasErrors = false;
     }
 
-    async getPluginId() {
-        const pluginInfo = await this.getPluginInfo();
-        return `${pluginInfo.name}@${pluginInfo.version}`;
+    getPluginId() {
+        return this._pluginId;
+    }
+
+    setPluginId(id) {
+        this._pluginId = id;
     }
 
     shouldReload() {
@@ -71,16 +75,7 @@ class Plugin {
     }
 
     __convertToPluginType(types) {
-        return (types || []).map(type => {
-                switch(type) {
-                    case 'meta': return PluginType.META;
-                    case 'pre': return PluginType.PRE;
-                    case 'post': return PluginType.POST;
-                    case 'exec': return PluginType.EXEC;
-                    case 'filter': return PluginType.FILTER;
-                    default: return false;
-                }
-            })
+        return (types || []).map(type => PluginType.from(type) || false)
             .filter(type => type !== false);
     }
 

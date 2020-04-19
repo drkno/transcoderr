@@ -1,5 +1,5 @@
 const { statSync, mkdirSync } = require('fs');
-const { join } = require('path');
+const { join, resolve } = require('path');
 
 class EnvironmentService {
     constructor(environment) {
@@ -11,17 +11,17 @@ class EnvironmentService {
     }
 
     getDataDirectory() {
-        const directory = this._environment.DATA_DIRECTORY || './temp';
+        const directory = resolve(this._environment.DATA_DIRECTORY || './temp');
         this._ensureExists('dataDirectory', directory);
         return directory;
     }
 
     getInternalPluginDirectory() {
-        return join(__dirname, '../plugins');
+        return resolve(join(__dirname, '../plugins'));
     }
 
     getExternalPluginDirectory() {
-        const directory = join(this.getDataDirectory(), 'plugins');
+        const directory = resolve(join(this.getDataDirectory(), 'plugins'));
         this._ensureExists('pluginDirectory', directory);
         return directory;
     }
@@ -35,7 +35,7 @@ class EnvironmentService {
     }
 
     getDatabaseMigrationsLocation() {
-        return join(__dirname, '../migrations');
+        return resolve(join(__dirname, '../migrations'));
     }
 
     isDatabaseDebugModeEnabled() {

@@ -4,37 +4,50 @@ const { open } = require('sqlite');
 class DatabaseService {
     constructor(environmentService) {
         this._environmentService = environmentService;
+        this._lastPromise = Promise.resolve();
         process.on('exit', this._closeDatabase.bind(this));
     }
 
     async get(...args) {
-        const db = await this._getDatabase();
         this._prepareStatement(args);
-        return await db.get.apply(db, args);
+        return this._executeWithDb(db => db.get.apply(db, args));
     }
 
     async exec(...args) {
-        const db = await this._getDatabase();
         this._prepareStatement(args);
-        return await db.exec.apply(db, args);
+        return this._executeWithDb(db => db.exec.apply(db, args));
     }
 
     async all(...args) {
-        const db = await this._getDatabase();
         this._prepareStatement(args);
-        return await db.all.apply(db, args);
+        return this._executeWithDb(db => db.all.apply(db, args));
     }
 
     async run(...args) {
-        const db = await this._getDatabase();
         this._prepareStatement(args);
-        return await db.run.apply(db, args);
+        return this._executeWithDb(db => db.run.apply(db, args));
     }
 
     async prepare(...args) {
-        const db = await this._getDatabase();
         this._prepareStatement(args);
-        return await db.prepare.apply(db, args);
+        return this._executeWithDb(db => db.prepare.apply(db, args));
+    }
+
+    _executeWithDb(callback) {
+        const lastPromise = this._lastPromise;
+        let newPromiseResolve = null;
+        this._lastPromise = new Promise(resolve => newPromiseResolve = resolve);
+        const execute = async() => {
+            try {
+                await lastPromise;
+                const db = await this._getDatabase();
+                return await callback(db);
+            }
+            finally {
+                newPromiseResolve();
+            }
+        };
+        return execute();
     }
 
     _prepareStatement(args) {

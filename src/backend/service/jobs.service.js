@@ -10,7 +10,7 @@ class JobsService extends EventEmitter {
     }
 
     async updatePluginExecutionState(job, pluginId, jobState, state, context) {
-        const result = await this._databaseService.run(`
+        await this._databaseService.run(`
             INSERT INTO JobExecutions (jobId, pluginId, jobState, state, context)
             VALUES (:jobId, :pluginId, :jobState, :state, :context)
             ON CONFLICT (jobId, pluginId) DO UPDATE SET
@@ -25,8 +25,6 @@ class JobsService extends EventEmitter {
             ':context': context || null
         });
 
-        LOG.warn(result);
-
         job.__applyUpdatedState({}, {
             [pluginId]: {
                 state,
@@ -35,10 +33,10 @@ class JobsService extends EventEmitter {
         });
 
         if (state === JobPluginState.FAILED || state === JobPluginState.UNKNOWN) {
-            LOG.error(`Job ${job.getJobId()} - ${pluginId}:${jobState} changed state to '${state}'${context ? ' - ' + context.stack || context : ''}`);
+            LOG.error(`Job ${job.getJobId()}, plugin ID=${pluginId} - ${jobState} execution changed state to '${state}'${context ? ' - ' + context.stack || context : ''}`);
         }
         else {
-            LOG.info(`Job ${job.getJobId()} - ${pluginId}:${jobState} changed state to '${state}'`);
+            LOG.info(`Job ${job.getJobId()}, plugin ID=${pluginId} - ${jobState} execution changed state to '${state}'`);
         }
 
         this.emit('job-updated', {
@@ -82,7 +80,7 @@ class JobsService extends EventEmitter {
         setValues[':jobId'] = job.getJobId();
 
         await this._databaseService.run(`
-                UPDATE Job
+                UPDATE Jobs
                 SET ${setKeys}
                 WHERE id = :jobId
             `, setValues);
@@ -115,9 +113,9 @@ class JobsService extends EventEmitter {
     }
 
     async _getExistingJobs(files) {
-        const jobs = await (!!files ? this._databaseService.all(`SELECT * FROM Job WHERE file IN (:files)`, {
+        const jobs = await (!!files ? this._databaseService.all(`SELECT * FROM Jobs WHERE file IN (:files)`, {
                 ':files': files
-            }) : this._databaseService.all(`SELECT * FROM Job`));
+            }) : this._databaseService.all(`SELECT * FROM Jobs`));
         return jobs.map(job => this._toJobRecord(job));
     }
 
@@ -126,13 +124,9 @@ class JobsService extends EventEmitter {
     }
 
     async _createNewJob(file) {
-        const result = await this._databaseService.run(`INSERT INTO Job
-            (state, file, runCount)
-            VALUES (?, ?, ?)`, [
-                'new',
-                file,
-                0
-            ]);
+        const result = await this._databaseService.run(`
+            INSERT INTO Jobs(state, file, runCount)
+            VALUES (?, ?, ?)`, ['new', file, 0]);
         
         const job = this._toJobRecord({
             id: result.lastID,

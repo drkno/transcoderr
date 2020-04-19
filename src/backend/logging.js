@@ -7,7 +7,7 @@ module.exports = logLevel => {
     }
 
     const logger = createLogger({
-        level: process.env.LOG_LEVEL || 'info',
+        level: logLevel,
         format: format.combine(
             format.timestamp({
                 format: 'YYYY-MM-DD HH:MM:SS'
@@ -15,7 +15,9 @@ module.exports = logLevel => {
             format.splat(),
             format.colorize({ all: false }),
             format.printf(info => {
-                if (typeof(info.message) !== 'string') {
+                if (info.stack) {
+                    info.message = info.stack;
+                } else if (typeof(info.message) !== 'string') {
                     try {
                         info.message = JSON.stringify(info.message, null, 4);
                     } catch(e) {}

@@ -1,9 +1,24 @@
-class PluginType {
-    static META = Symbol('META');
-    static EXEC = Symbol('EXEC');
-    static POST = Symbol('POST');
-    static PRE = Symbol('PRE');
-    static FILTER = Symbol('FILTER');
+class Type {
+    constructor(type) {
+        this.type = type;
+    }
+
+    getType() {
+        return this.type;
+    }
+
+    toString() {
+        return this.type;
+    }
 }
 
-module.exports = PluginType;
+const Types = {
+    META: new Type('meta'),
+    PRE: new Type('pre'),
+    FILTER: new Type('filter'),
+    EXEC: new Type('exec'),
+    POST: new Type('post'),
+    from: val => Object.values(Types).filter(type => type.toString() === val)[0]
+};
+
+module.exports = Types;
