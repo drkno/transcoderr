@@ -38,6 +38,10 @@ class DatabaseService {
     }
 
     _prepareStatement(args) {
+        if (!args[1]) {
+            return;
+        }
+
         let statement = args[0];
         let params = args[1];
         if (!Array.isArray(params)) {

@@ -62,16 +62,16 @@ class PluginService {
     }
 
     async _createOrUpdatePlugins(plugins) {
-        const checksumData = await this._databaseService.get(`SELECT name, checksum FROM Plugins`);
+        const checksumData = await this._databaseService.all(`SELECT name, checksum FROM Plugin`);
         const checksumMap = checksumData.reduce((acc, curr) => (acc[curr.name] = curr.checksum, curr), {});
 
-        return await Promise.all(plugins.map(plugin => this._createOrUpdatePlugin(plugin, )));
+        return await Promise.all(plugins.map(plugin => this._createOrUpdatePlugin(plugin, checksumMap)));
     }
 
     async _createOrUpdatePlugin(plugin, checksumLookup = null) {
         const pluginInfo = await plugin.getPluginInfo();
         if (checksumLookup == null) {
-            const results = this._databaseService.get(`SELECT checksum FROM Plugins WHERE name = :name`, {
+            const results = await this._databaseService.get(`SELECT checksum FROM Plugin WHERE name = :name`, {
                 ':name': pluginInfo.name
             });
             if (results.length === 1) {
@@ -81,19 +81,20 @@ class PluginService {
             }
         }
 
-        if (checksumLookup[plugin.name] !== plugin.getChecksum()) {
+        const pluginChecksum = await plugin.getChecksum();
+        if (checksumLookup[pluginInfo.name] !== pluginChecksum) {
             await this._databaseService.run(`
-                INSERT INTO Plugins (name, checksum)
+                INSERT INTO Plugin (name, checksum)
                 VALUES (:name, :checksum)
                 ON CONFLICT (name) DO UPDATE SET
                 checksum = :checksum
                 WHERE name = :name
             `, {
                 ':name': pluginInfo.name,
-                ':checksum': plugin.getChecksum()
+                ':checksum': pluginChecksum
             });
 
-            LOG.warn(`New/updated plugin detected: ${plugin.name}`);
+            LOG.warn(`New/updated plugin detected: ${pluginInfo.name}`);
         }
     }
 
