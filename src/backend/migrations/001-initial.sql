@@ -111,6 +111,7 @@ CREATE TABLE Preferences (
 );
 
 INSERT INTO JobStates (state, name, description) VALUES ('new', 'New', 'This is a new job that has never been executed before.');
+INSERT INTO JobStates (state, name, description) VALUES ('renew', 'Renew', 'This is a previously run job that should be re-executed.');
 INSERT INTO JobStates (state, name, description) VALUES ('meta', 'Gathering metadata', 'Performing analysis on the files.');
 INSERT INTO JobStates (state, name, description) VALUES ('pre', 'Generating transcoder options', 'Generating options to use with the transcoder, if any for each file');
 INSERT INTO JobStates (state, name, description) VALUES ('filter', 'Filtering options and files', 'Checking that generated options are optimal and removing deletable files.');

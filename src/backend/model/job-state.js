@@ -24,6 +24,7 @@ class State {
 
 const States = {
     NEW: new State('new', true, false),
+    RENEW: new State('renew', false, false),
     META: new State('meta', false, false),
     PRE: new State('pre', false, false),
     FILTER: new State('filter', false, false),

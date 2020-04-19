@@ -39,6 +39,10 @@ class ExecutorService extends EventEmitter {
         const postPlugins = await this._pluginService.getPostPlugins();
 
         const tasks = newJobs.map(async(job) => {
+            if (job.isAborted()) {
+                await this._jobsService.updateJobState(job, JobState.RENEW);
+            }
+
             const metaCollector = new MetaCollector(job.getFile());
             await this._executeState(JobState.META, job, metaPlugins, metaCollector);
 
