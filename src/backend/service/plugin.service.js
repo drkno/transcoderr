@@ -61,7 +61,7 @@ class PluginService {
                 FROM Plugins p
                 JOIN PluginType t
                 ON p.id = t.pluginId
-                WHERE t.type = :type
+                WHERE t.type = :type AND p.enabled = 1
             `, {
                 ':type': type
             }) :

@@ -38,7 +38,7 @@ class JobRecord {
     }
 
     getRunCount() {
-        return this.lastRun;
+        return this.runCount;
     }
 
     getPluginStatus() {
