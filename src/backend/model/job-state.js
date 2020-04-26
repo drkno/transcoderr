@@ -1,8 +1,36 @@
-class State {
-    constructor(state, final = false, failure = false) {
+let all;
+
+class JobState {
+    constructor(id, state, name, description, final, failure) {
+        this.id = id;
         this.state = state;
-        this.final = final;
-        this.failure = failure;
+        this.name = name;
+        this.description = description;
+        this.final = final === 1;
+        this.failure = failure === 1;
+    }
+
+    static all() {
+        return all;
+    }
+
+    static create(id, state, name, description, final, failure) {
+        const newState = new JobState(id, state, name, description, final, failure);
+        JobState[state.toUpperCase()] = newState;
+        JobState[state] = newState;
+        if (!all) {
+            all = [];
+        }
+        all.push(newState);
+        return newState;
+    }
+
+    static from(val) {
+        return JobState[val];
+    }
+
+    getId() {
+        return this.id;
     }
 
     getState() {
@@ -22,17 +50,4 @@ class State {
     }
 }
 
-const States = {
-    NEW: new State('new', true, false),
-    RENEW: new State('renew', false, false),
-    META: new State('meta', false, false),
-    PRE: new State('pre', false, false),
-    FILTER: new State('filter', false, false),
-    EXEC: new State('exec', false, false),
-    POST: new State('post', false, false),
-    COMPLETE: new State('complete', true, false),
-    ABORT: new State('abort', true, true),
-    from: val => Object.values(States).filter(state => state.toString() === val)[0]
-};
-
-module.exports = States;
+module.exports = JobState;

@@ -6,7 +6,12 @@ CREATE TABLE JobStates (
     id          INTEGER PRIMARY KEY,
     state       TEXT    NOT NULL UNIQUE,
     name        TEXT    NOT NULL,
-    description TEXT    NOT NULL
+    description TEXT    NOT NULL,
+    final       INTEGER NOT NULL,
+    failure     INTEGER NOT NULL,
+
+    CONSTRAINT jobStates_ck_final CHECK (final IN (0, 1)),
+    CONSTRAINT jobStates_ck_failure CHECK (failure IN (0, 1))
 );
 
 CREATE TABLE Jobs (
@@ -110,15 +115,15 @@ CREATE TABLE Preferences (
     value       TEXT
 );
 
-INSERT INTO JobStates (state, name, description) VALUES ('new', 'New', 'This is a new job that has never been executed before.');
-INSERT INTO JobStates (state, name, description) VALUES ('renew', 'Renew', 'This is a previously run job that should be re-executed.');
-INSERT INTO JobStates (state, name, description) VALUES ('meta', 'Gathering metadata', 'Performing analysis on the files.');
-INSERT INTO JobStates (state, name, description) VALUES ('pre', 'Generating transcoder options', 'Generating options to use with the transcoder, if any for each file');
-INSERT INTO JobStates (state, name, description) VALUES ('filter', 'Filtering options and files', 'Checking that generated options are optimal and removing deletable files.');
-INSERT INTO JobStates (state, name, description) VALUES ('exec', 'Running transcode operations', 'Using ffmpeg to ensure files are in the desired format.');
-INSERT INTO JobStates (state, name, description) VALUES ('post', 'Post-execution analysis', 'Analysing changes that were made and notifying downstream services.');
-INSERT INTO JobStates (state, name, description) VALUES ('complete', 'Complete', 'The job is complete.');
-INSERT INTO JobStates (state, name, description) VALUES ('abort', 'Aborted', 'The job was aborted.');
+INSERT INTO JobStates (state, name, description, final, failure) VALUES ('new', 'New', 'This is a new job that has never been executed before.', 1, 0);
+INSERT INTO JobStates (state, name, description, final, failure) VALUES ('renew', 'Renew', 'This is a previously run job that should be re-executed.', 0, 0);
+INSERT INTO JobStates (state, name, description, final, failure) VALUES ('meta', 'Gathering metadata', 'Performing analysis on the files.', 0, 0);
+INSERT INTO JobStates (state, name, description, final, failure) VALUES ('pre', 'Generating transcoder options', 'Generating options to use with the transcoder, if any for each file', 0, 0);
+INSERT INTO JobStates (state, name, description, final, failure) VALUES ('filter', 'Filtering options and files', 'Checking that generated options are optimal and removing deletable files.', 0, 0);
+INSERT INTO JobStates (state, name, description, final, failure) VALUES ('exec', 'Running transcode operations', 'Using ffmpeg to ensure files are in the desired format.', 0, 0);
+INSERT INTO JobStates (state, name, description, final, failure) VALUES ('post', 'Post-execution analysis', 'Analysing changes that were made and notifying downstream services.', 0, 0);
+INSERT INTO JobStates (state, name, description, final, failure) VALUES ('complete', 'Complete', 'The job is complete.', 1, 0);
+INSERT INTO JobStates (state, name, description, final, failure) VALUES ('abort', 'Aborted', 'The job was aborted.', 1, 1);
 
 INSERT INTO ExecutionStates (state, name, description) VALUES ('started', 'Plugin Started', 'The plugin has started executing');
 INSERT INTO ExecutionStates (state, name, description) VALUES ('successful', 'Successful', 'Plugin execution was successful');

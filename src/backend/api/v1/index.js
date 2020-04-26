@@ -4,6 +4,7 @@ const sonarr = require('./sonarr');
 const radarr = require('./radarr');
 const manual = require('./manual');
 const jobs = require('./jobs');
+const jobStates = require('./jobStates');
 
 module.exports = serviceFactory => {
     const apiRouter = Router();
@@ -15,6 +16,7 @@ module.exports = serviceFactory => {
     apiRouter.post('/manual', manual(serviceFactory));
 
     apiRouter.get('/jobs', jobs(serviceFactory));
+    apiRouter.get('/jobStates', jobStates(serviceFactory));
 
     return apiRouter;
 };

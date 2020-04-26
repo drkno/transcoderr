@@ -1,5 +1,9 @@
+let sequenceNumber = Number.MIN_SAFE_INTEGER;
+
 const createForwardingListener = (name, service, socket) => {
-    const listener = data => socket.emit(name, data);
+    const listener = data => socket.emit(name, Object.assign({
+        _sequenceNumber: sequenceNumber++
+    }, data));
     service.on(name, listener);
     socket.once('disconnect', () => service.removeListener(name, listener));
 };

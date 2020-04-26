@@ -26,7 +26,7 @@ class ExecutorService extends EventEmitter {
             files = [files];
         }
 
-        const newJobs = (await this._jobsService.getJobs(files))
+        const newJobs = (await this._jobsService.getJobsForFiles(files))
             .map(job => {
                 this._inProgressJobs.push(job);
                 return job;

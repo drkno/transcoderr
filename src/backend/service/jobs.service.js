@@ -7,6 +7,7 @@ class JobsService extends EventEmitter {
     constructor(databaseService) {
         super();
         this._databaseService = databaseService;
+        this.getPossibleJobStates();
     }
 
     async updatePluginExecutionState(job, pluginId, jobState, state, context) {
@@ -86,7 +87,7 @@ class JobsService extends EventEmitter {
             `, setValues);
 
         if (newState === JobState.ABORT) {
-            LOG.info(`Job ${job.getJobId()} was aborted.`);
+            LOG.error(`Job ${job.getJobId()} was aborted.`);
         }
         else {
             LOG.info(`Job ${job.getJobId()} changed to state ${newState}.`);
@@ -103,7 +104,12 @@ class JobsService extends EventEmitter {
         return job;
     }
 
-    async getJobs(files) {
+    async getAllJobs() {
+        const jobs = await this._databaseService.all(`SELECT * FROM Jobs`);
+        return jobs.map(job => this._toJobRecord(job));
+    }
+
+    async getJobsForFiles(files) {
         const existingJobs = await this._getExistingJobs(files);
 
         const existingJobsMap = existingJobs.reduce((acc, curr) => (acc[curr.getFile()] = curr, acc), {});
@@ -112,10 +118,25 @@ class JobsService extends EventEmitter {
         return existingJobs.concat(newJobs);;
     }
 
+    async getPossibleJobStates() {
+        const all = JobState.all();
+        if (all) {
+            return all;
+        }
+        return (await this._databaseService.all(`SELECT * FROM JobStates`))
+            .map(jobState => JobState.create(
+                jobState.id,
+                jobState.state,
+                jobState.name,
+                jobState.description,
+                jobState.final,
+                jobState.failure));
+    }
+
     async _getExistingJobs(files) {
-        const jobs = await (!!files ? this._databaseService.all(`SELECT * FROM Jobs WHERE file IN (:files)`, {
+        const jobs = await this._databaseService.all(`SELECT * FROM Jobs WHERE file IN (:files)`, {
                 ':files': files
-            }) : this._databaseService.all(`SELECT * FROM Jobs`));
+            });
         return jobs.map(job => this._toJobRecord(job));
     }
 

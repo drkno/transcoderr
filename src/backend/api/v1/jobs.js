@@ -1,6 +1,7 @@
 module.exports = serviceFactory => {
-    const executor = serviceFactory.getExecutorService();
-    return (_, res) => {
-        res.json(executor.getJobRecord());
+    const jobsService = serviceFactory.getJobsService();
+    return async(_, res) => {
+        const jobs = await jobsService.getAllJobs();
+        res.json(jobs);
     };
 };

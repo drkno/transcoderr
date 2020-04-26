@@ -15,7 +15,9 @@ const serviceFactory = require('./service');
     
     const app = express();
     const server = Server(app);
-    const io = socketIO(server);
+    const io = socketIO(server, {
+        path: '/api/ws'
+    });
 
     const listen = promisify(server.listen.bind(server));
     const port = preferencesService.getPort();
@@ -23,7 +25,6 @@ const serviceFactory = require('./service');
     app.use(json());
     app.use('/api/v1', v1Routes(serviceFactory));
     
-    io.path('/api/ws');
     wsRoutes(io, serviceFactory);
 
     await listen(port);
