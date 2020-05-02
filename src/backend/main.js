@@ -9,6 +9,14 @@ const uiRoutes = require('./static');
 const setupLogging = require('./logging');
 const serviceFactory = require('./service');
 
+const loggingMiddleware = (req, _, next) => {
+    const body = req.body && Object.keys(req.body).length > 0
+        ? ' ' + JSON.stringify(req.body, null, 4)
+        : '';
+    LOG.info(`[${req.method}] ${req.url}${body}`);
+    next();
+};
+
 (async() => {
     const preferencesService = serviceFactory.getPreferencesService();
 
@@ -24,10 +32,10 @@ const serviceFactory = require('./service');
     const port = preferencesService.getPort();
     
     app.use(json());
-    app.use('/api/v1', v1Routes(serviceFactory));
-    
-    wsRoutes(io, serviceFactory);
+    app.use(loggingMiddleware);
 
+    app.use('/api/v1', v1Routes(serviceFactory));
+    wsRoutes(io, serviceFactory);
     uiRoutes(app);
 
     await listen(port);

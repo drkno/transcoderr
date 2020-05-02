@@ -21,7 +21,7 @@ const Job = ({ job }) => (
         </td>
         <td>{job.runCount}</td>
         <td>
-            <AbortRerunButton jobId={job.id} state={job.state} />
+            <AbortRerunButton jobId={job.jobId} state={job.state} />
         </td>
     </tr>
 );

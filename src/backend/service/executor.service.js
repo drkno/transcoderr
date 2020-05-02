@@ -21,16 +21,21 @@ class ExecutorService extends EventEmitter {
         }
     }
 
-    async execute(files) {
-        if (!Array.isArray(files)) {
-            files = [files];
+    async execute(filesOrJobs) {
+        if (!Array.isArray(filesOrJobs)) {
+            filesOrJobs = [filesOrJobs];
         }
 
-        const newJobs = (await this._jobsService.getJobsForFiles(files))
-            .map(job => {
-                this._inProgressJobs.push(job);
-                return job;
-            });
+        let newJobs;
+        if (typeof(filesOrJobs[0]) === 'string') {
+            newJobs = (await this._jobsService.getJobsForFiles(files))
+                .map(job => {
+                    this._inProgressJobs.push(job);
+                    return job;
+                });
+        } else {
+            newJobs = filesOrJobs;
+        }
 
         const metaPlugins = await this._pluginService.getMetaPlugins();
         const prePlugins = await this._pluginService.getPrePlugins();

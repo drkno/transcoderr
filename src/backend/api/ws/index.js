@@ -15,6 +15,7 @@ module.exports = (io, serviceFactory) => {
     const preferencesService = serviceFactory.getPreferencesService();
 
     io.on('connection', socket => {
+        LOG.info('New websocket connection');
         
         createForwardingListener('job-updated', jobsService, socket);
         createForwardingListener('new-job', jobsService, socket);

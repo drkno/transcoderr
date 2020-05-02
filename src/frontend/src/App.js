@@ -3,7 +3,9 @@ import Table from 'react-bootstrap/Table';
 import socketio from 'socket.io-client';
 
 import Job from './components/Job';
-import getAllJobsApi from './api/jobs';
+import jobsApi from './api/jobs';
+import eventDebouncer from './utils/eventDebouncer';
+import mergeStates from './utils/mergeStates';
 
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './App.css';
@@ -17,6 +19,7 @@ class App extends Component {
         };
         this.onNewJob = this.onNewJob.bind(this);
         this.onJobUpdated = this.onJobUpdated.bind(this);
+        this.onJobStateChange = eventDebouncer(this.onJobStateChange.bind(this), 200);
     }
 
     componentDidMount() {
@@ -39,7 +42,7 @@ class App extends Component {
     }
 
     async onFirstLoad() {
-        const allJobs = await getAllJobsApi();
+        const allJobs = await jobsApi.getAllJobs();
         if (!this.unmounted) {
             this.setState({
                 jobs: allJobs
@@ -54,25 +57,43 @@ class App extends Component {
     }
 
     onJobUpdated(jobChange) {
-        console.log(jobChange);
-        if (jobChange.changeType !== 'job-state') {
-            return;
+        switch(jobChange.changeType) {
+            case 'job-state': return this.onJobStateChange(jobChange);
+            case 'job-plugin-state': return this.onJobPluginStateChange(jobChange);
+            default: throw new Error('Unknown event type');
         }
-        const index = this.state.jobs.findIndex(job => job.jobId === jobChange.job.jobId);
-        const item = this.state.jobs[index];
-        if (item._sequenceNumber && item._sequenceNumber >= jobChange._sequenceNumber) {
-            console.log('Ignorning update');
-            return;
+    }
+
+    onJobStateChange(jobChanges) {
+        const jobs = this.state.jobs.slice();
+        for (let jobChange of jobChanges) {
+            const newJob = jobChange.job;
+            const newJobVersion = jobChange._sequenceNumber;
+            newJob._sequenceNumber = newJobVersion;
+
+            const index = jobs.findIndex(job => job.jobId === newJob.jobId);
+            if (index < 0) {
+                jobs.push(newJob);
+            }
+            else {
+                const oldJob = jobs[index];
+                const oldJobVersion = oldJob._sequenceNumber;
+
+                const job = mergeStates(oldJob, oldJobVersion, newJob, newJobVersion);
+                jobs[index] = job;
+            }
         }
-        console.log('Update accepted');
-        const begin = this.state.jobs.slice(0, index);
-        const end = this.state.jobs.slice(index + 1, this.state.jobs.length);
-        this.setState({
-            jobs: begin.concat(jobChange.job).concat(end)
-        });
+
+        this.setState({ jobs });
+    }
+
+    onJobPluginStateChange(change) {
+        // todo
     }
 
     render() {
+        const sortedJobs = this.state.jobs.sort((a, b) =>
+            new Date(b.lastRun).getTime() - new Date(a.lastRun).getTime());
         return (
             <div className="App">
                 <Table hover>
@@ -90,7 +111,7 @@ class App extends Component {
                     </thead>
                     <tbody>
                         {
-                            this.state.jobs.map(job => (
+                            sortedJobs.map(job => (
                                 <Job key={job.jobId} job={job} />
                             ))
                         }

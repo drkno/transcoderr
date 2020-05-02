@@ -15,7 +15,7 @@ module.exports = serviceFactory => {
     apiRouter.post('/radarr', radarr(serviceFactory));
     apiRouter.post('/manual', manual(serviceFactory));
 
-    apiRouter.get('/jobs', jobs(serviceFactory));
+    apiRouter.use('/job', jobs(serviceFactory));
     apiRouter.get('/jobStates', jobStates(serviceFactory));
 
     return apiRouter;

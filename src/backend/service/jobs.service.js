@@ -86,6 +86,8 @@ class JobsService extends EventEmitter {
                 WHERE id = :jobId
             `, setValues);
 
+        job.__applyUpdatedState(changes, {});
+
         if (newState === JobState.ABORT) {
             LOG.error(`Job ${job.getJobId()} was aborted.`);
         }
@@ -99,14 +101,19 @@ class JobsService extends EventEmitter {
             changeDiff: changes
         });
 
-        job.__applyUpdatedState(changes, {});
-
         return job;
     }
 
     async getAllJobs() {
         const jobs = await this._databaseService.all(`SELECT * FROM Jobs`);
         return jobs.map(job => this._toJobRecord(job));
+    }
+
+    async getJob(id) {
+        const job = await this._databaseService.get(`SELECT * FROM Jobs where id = :jobId`, {
+            ':jobId': id
+        });
+        return this._toJobRecord(job);
     }
 
     async getJobsForFiles(files) {
