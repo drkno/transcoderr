@@ -2,6 +2,7 @@ import React from 'react';
 import JobState from './JobState';
 import DateComponent from './Date';
 import AbortRerunButton from './AbortRerunButton';
+import PluginModal from './PluginModal';
 
 const Job = ({ job }) => (
     <tr>
@@ -22,6 +23,8 @@ const Job = ({ job }) => (
         <td>{job.runCount}</td>
         <td>
             <AbortRerunButton jobId={job.jobId} state={job.state} />
+            &nbsp;
+            <PluginModal plugins={job.plugins} />
         </td>
     </tr>
 );

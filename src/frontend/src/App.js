@@ -65,6 +65,7 @@ class App extends Component {
     }
 
     onJobStateChange(jobChanges) {
+        console.log(jobChanges);
         const jobs = this.state.jobs.slice();
         for (let jobChange of jobChanges) {
             const newJob = jobChange.job;

@@ -54,7 +54,7 @@ class JobRecord {
             this[key] = record[key];
         }
 
-        this.plugins = Object.assign(record, plugins);
+        this.plugins = Object.assign(this.plugins, plugins);
     }
 
     toString() {
