@@ -17,7 +17,7 @@ RUN mkdir -p /opt/ffmpeg && \
     rm ffmpeg.tar.xz
 
 COPY ./src/backend /opt/server
-COPY --from=frontend-builder /frontend/builder /opt/server/ui
+COPY --from=frontend-builder /frontend/build /opt/server/ui
 
 RUN cd /opt/server && npm install
 
