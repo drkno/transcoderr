@@ -1,5 +1,6 @@
 module.exports = serviceFactory => {
-    const executor = serviceFactory.getExecutorService();
+    const executorService = serviceFactory.getExecutorService();
+    const directoryService = serviceFactory.getDirectoryService();
     return (req, res) => {
         res.json({});
 
@@ -8,7 +9,8 @@ module.exports = serviceFactory => {
             return;
         }
 
-        const filePath = req.body.movieFile.path;
-        executor.execute(filePath);
+        const origPath = req.body.movieFile.path;
+        const moviePath = directoryService.getRealPath(origPath);
+        executorService.execute(moviePath);        
     };
 };

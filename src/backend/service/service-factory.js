@@ -1,6 +1,7 @@
 const { join } = require('path');
 
 const DatabaseService = require('./database.service');
+const DirectoryService = require('./directory.service');
 const EnvironmentService = require('./environment.service');
 const ExecutorService = require('./executor.service');
 const JobsService = require('./jobs.service');
@@ -12,6 +13,13 @@ class ServiceFactory {
         return this._lazyInstantiate('_database', () => {
             const environmentService = this.getEnvironmentService();
             return new DatabaseService(environmentService);
+        });
+    }
+
+    getDirectoryService() {
+        return this._lazyInstantiate('_directory', () => {
+            const preferencesService = this.getPreferencesService();
+            return new DirectoryService(preferencesService);
         });
     }
 

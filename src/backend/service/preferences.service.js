@@ -24,6 +24,14 @@ class PreferencesService {
         return this._environmentService.getDatabaseLocation();
     }
 
+    getMediaDirectory() {
+        return this._environmentService.getMediaDirectory();
+    }
+
+    getMediaDirectoryRegex() {
+        return this._environmentService.getMediaDirectoryRegex();
+    }
+
     getPort() {
         return this._environmentService.getPort();
     }

@@ -42,6 +42,14 @@ class EnvironmentService {
         return !!this._environment.DEBUG_DATABASE_CALLS || false;
     }
 
+    getMediaDirectory() {
+        return this._environment.MEDIA_DIRECTORY || '';
+    }
+
+    getMediaDirectoryRegex() {
+        return this._environment.MEDIA_DIRECTORY_REGEX || '';
+    }
+
     getPort() {
         return this._environment.PORT || 4300;
     }

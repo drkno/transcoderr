@@ -1,7 +1,8 @@
 module.exports = serviceFactory => {
-    const executor = serviceFactory.getExecutorService();
+    const executorService = serviceFactory.getExecutorService();
+    const directoryService = serviceFactory.getDirectoryService();
     return (req, res) => {
         res.json({});
-        executor.execute(req.body);
+        executorService.execute(req.body.map(file => directoryService.getRealPath(file)));
     };
 };
