@@ -1,5 +1,13 @@
-FROM node:latest
+# build front-end
+FROM node:latest as frontend-builder
+COPY ./src/frontend /frontend
+WORKDIR /frontend
+RUN yarn && \
+    yarn build && \
+    find . -name "*.map" -type f -delete
 
+# build back-end
+FROM node:latest
 RUN mkdir -p /opt/ffmpeg && \
     cd /opt/ffmpeg && \
     curl -L https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz --output ffmpeg.tar.xz && \
@@ -9,6 +17,7 @@ RUN mkdir -p /opt/ffmpeg && \
     rm ffmpeg.tar.xz
 
 COPY ./src/backend /opt/server
+COPY --from=frontend-builder /frontend/builder /opt/server/ui
 
 RUN cd /opt/server && npm install
 
