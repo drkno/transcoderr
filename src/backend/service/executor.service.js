@@ -28,7 +28,7 @@ class ExecutorService extends EventEmitter {
 
         let newJobs;
         if (typeof(filesOrJobs[0]) === 'string') {
-            newJobs = (await this._jobsService.getJobsForFiles(files))
+            newJobs = (await this._jobsService.getJobsForFiles(filesOrJobs))
                 .map(job => {
                     this._inProgressJobs.push(job);
                     return job;
