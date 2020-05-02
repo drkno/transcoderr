@@ -7,7 +7,7 @@ A transcoding pipeline designed to normalise file types into a common filetype. 
 ### Installation
 
 1. Install `docker`.
-2. Start this servie in docker. You can use a command similar to `docker run -p 4300:4300/tcp --name transcoderr -ti drkno/transcoderr:latest`
+2. Start this servie in docker. You can use a command similar to `docker run -p 4300:4300/tcp --name transcoderr -v ./config:/config -ti drkno/transcoderr:latest`
 3. Install plugins into the `plugins` directory.
 4. Configure webhooks in Sonarr (`/api/v1/sonarr`), Radarr (`/api/v1/radarr`) or otherwise (`/api/v1/manual`). See below for more details.
 
@@ -76,7 +76,7 @@ Each plugin at each stage of the pipeline must expose an asynchronous method nam
 async metamain(collector) {}
 ```
 
-Collectors are passed to each main method and represent a way to get and pass state betweem each stage of the pipeline. Individual stages have different collectors, see `src/backend/model/collector` for a list of collectors and what each expose.
+Collectors are passed to each main method and represent a way to get and pass state between each stage of the pipeline. Individual stages have different collectors, see `src/backend/model/collector` for a list of collectors and what each expose.
 
 #### Loading / Updating Plugins
 

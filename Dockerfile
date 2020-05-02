@@ -8,6 +8,9 @@ RUN yarn && \
 
 # build back-end
 FROM node:latest
+
+ENV DATA_DIRECTORY=/config
+
 RUN mkdir -p /opt/ffmpeg && \
     cd /opt/ffmpeg && \
     curl -L https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz --output ffmpeg.tar.xz && \
@@ -24,4 +27,5 @@ RUN cd /opt/server && npm install
 WORKDIR /opt/server
 ENTRYPOINT [ "node", "main.js" ]
 EXPOSE 4300
+VOLUME [ "/config" ]
 HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 CMD [ "curl", "--fail", "http://localhost:4300/api/v1/healthcheck" ]
