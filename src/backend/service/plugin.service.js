@@ -57,7 +57,7 @@ class PluginService {
     async _listPlugins(type) {
         const plugins = await (!!type ?
             this._databaseService.all(`
-                SELECT *
+                SELECT p.*
                 FROM Plugins p
                 JOIN PluginType t
                 ON p.id = t.pluginId
@@ -70,7 +70,15 @@ class PluginService {
                 FROM Plugins
             `));
 
-        return plugins.map(plugin => this._pluginCache[plugin.id]);
+        return plugins.map(plugin => {
+                const cachedPlugin = this._pluginCache[plugin.id];
+                if (!cachedPlugin) {
+                    LOG.warn(`Plugin ${plugin.id} does not appear to be loaded. Has it been uninstalled?`);
+                    this._unloadPlugin(plugin);
+                }
+                return cachedPlugin;
+            })
+            .filter(plugin => !!plugin);
     }
 
     async _unloadPlugin(descriptor) {

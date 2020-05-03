@@ -34,7 +34,10 @@ class JobsService extends EventEmitter {
         });
 
         if (state === JobPluginState.FAILED || state === JobPluginState.UNKNOWN) {
-            LOG.error(`Job ${job.getJobId()}, plugin ID=${pluginId} - ${jobState} execution changed state to '${state}'${context ? ' - ' + context.stack || context : ''}`);
+            LOG.error(`Job ${job.getJobId()}, plugin ID=${pluginId} - ${jobState} execution changed state to '${state}'${context ? ' - ' + (context.message || context) : ''}`);
+            if (context && context.stack) {
+                LOG.debug(context.stack);
+            }
         }
         else {
             LOG.info(`Job ${job.getJobId()}, plugin ID=${pluginId} - ${jobState} execution changed state to '${state}'`);

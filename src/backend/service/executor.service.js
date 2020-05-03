@@ -44,7 +44,7 @@ class ExecutorService extends EventEmitter {
         const postPlugins = await this._pluginService.getPostPlugins();
 
         const tasks = newJobs.map(async(job) => {
-            if (job.isAborted()) {
+            if (job.getState().isFinalState() && job.getState() !== JobState.NEW) {
                 await this._jobsService.updateJobState(job, JobState.RENEW);
             }
 
@@ -98,7 +98,10 @@ class ExecutorService extends EventEmitter {
                 const mainMethodName = jobState + 'main';
                 const sandboxedPlugin = await plugin.getPlugin();
                 if (sandboxedPlugin[mainMethodName]) {
-                    await sandboxedPlugin[mainMethodName](collector);
+                    const didFail = await sandboxedPlugin[mainMethodName](collector);
+                    if (didFail) {
+                        throw new Error(`'${pluginId}' returned a failure`);
+                    }
                 } else {
                     throw new Error(`'${pluginId}' is of type '${jobState}' but does not have method '${mainMethodName}'.`);
                 }

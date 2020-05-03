@@ -6,7 +6,8 @@ class DimensionMetaPlugin {
             name: 'dimensions',
             description: 'adds actual and reported video dimensions to events',
             version: '1.0.0',
-            types: ['meta']
+            types: ['meta'],
+            failureSafe: true
         };
     }
 
