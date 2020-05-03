@@ -21,7 +21,7 @@ const Job = ({ job }) => (
             <DateComponent dateTime={job.lastFailure} />
         </td>
         <td>{job.runCount}</td>
-        <td>
+        <td className="noWrap">
             <AbortRerunButton jobId={job.jobId} state={job.state} />
             &nbsp;
             <PluginModal plugins={job.plugins} />

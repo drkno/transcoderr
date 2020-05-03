@@ -99,7 +99,7 @@ class App extends Component {
             <div className="App">
                 <Table hover>
                     <thead>
-                        <tr>
+                        <tr className="noWrap">
                             <th>Job ID</th>
                             <th>State</th>
                             <th>File</th>
