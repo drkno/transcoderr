@@ -1,3 +1,5 @@
+const { join } = require('path');
+
 module.exports = serviceFactory => {
     const executorService = serviceFactory.getExecutorService();
     const directoryService = serviceFactory.getDirectoryService();
@@ -9,8 +11,8 @@ module.exports = serviceFactory => {
             return;
         }
 
-        const origPath = req.body.movieFile.path;
-        const moviePath = directoryService.getRealPath(origPath);
-        executorService.execute(moviePath);        
+        const origPath = join(req.body.movie.path, req.body.movieFile.relativePath);
+        const episodePath = directoryService.getRealPath(origPath);
+        executorService.execute(episodePath);
     };
 };

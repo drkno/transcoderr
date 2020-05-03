@@ -10,10 +10,12 @@ const setupLogging = require('./logging');
 const serviceFactory = require('./service');
 
 const loggingMiddleware = (req, _, next) => {
-    const body = req.body && Object.keys(req.body).length > 0
-        ? ' ' + JSON.stringify(req.body, null, 4)
-        : '';
-    LOG.info(`[${req.method}] ${req.url}${body}`);
+    if (req.url !== '/api/v1/healthcheck') {
+        const body = req.body && Object.keys(req.body).length > 0
+            ? ' ' + JSON.stringify(req.body, null, 4)
+            : '';
+        LOG.info(`[${req.method}] ${req.url}${body}`);
+    }
     next();
 };
 

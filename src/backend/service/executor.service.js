@@ -105,7 +105,7 @@ class ExecutorService extends EventEmitter {
                 } else {
                     throw new Error(`'${pluginId}' is of type '${jobState}' but does not have method '${mainMethodName}'.`);
                 }
-                await this._jobsService.updatePluginExecutionState(job, pluginId, jobState, JobPluginState.SUCCESS);
+                await this._jobsService.updatePluginExecutionState(job, pluginId, jobState, JobPluginState.SUCCESSFUL);
             } catch(e) {
                 await this._jobsService.updatePluginExecutionState(job, pluginId, jobState, JobPluginState.FAILED, e);
                 const pluginInfo = await plugin.getPluginInfo();
