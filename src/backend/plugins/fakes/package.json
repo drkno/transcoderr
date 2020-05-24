@@ -1,0 +1,11 @@
+{
+    "name": "fake-detector",
+    "description": "Detects and marks fake videos for deletion",
+    "version": "1.0.0",
+    "types": ["pre"],
+    "failureSafe": true,
+    "main": "fake.js",
+    "dependencies": {
+        "looks-same": "^7.2.3"
+    }
+}
