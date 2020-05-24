@@ -26,7 +26,7 @@ class FilterCollector extends Collector {
     }
 
     shouldExec() {
-        return this._shouldExec;
+        return this._shouldExec && this.getFfmpegOptions().length > 0;
     }
 
     vetoExec() {

@@ -24,7 +24,10 @@ class PreCollector extends Collector {
         this._shouldDelete = true;
     }
 
-    setFfmpegOptions(options) {
+    appendFfmpegOptions(options) {
+        if (!Array.isArray(options)) {
+            options = [options];
+        }
         this._ffmpegOptions.push(options);
     }
 }
