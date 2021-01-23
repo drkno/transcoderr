@@ -3,6 +3,7 @@ const { sep } = require('path');
 const { promisify } = require('util');
 const { watch } = require('chokidar');
 const { PackagePlugin, FilePlugin, PluginType } = require('../model/plugin');
+const { debounceArgs } = require('../utils/debounce');
 
 const asyncStat = promisify(stat);
 
@@ -15,6 +16,7 @@ class PluginService {
             preferencesService.getExternalPluginDirectory()
         ];
 
+        this._lastLoad = Promise.resolve();
         this._pluginCache = {};
 
         this._watcher = watch(this._pluginDirectories, {
@@ -26,8 +28,8 @@ class PluginService {
             }
         });
 
-        this._handleWatchEvent = this._handleWatchEvent.bind(this);
-        this._watcher.on('all', this._handleWatchEvent);
+        this._handleWatchEventDeduplicated = debounceArgs(200, this._handleWatchEventDeduplicated.bind(this));
+        this._watcher.on('all', this._handleWatchEvent.bind(this));
     }
 
     async getMetaPlugins() {
@@ -86,6 +88,8 @@ class PluginService {
             return;
         }
 
+        LOG.warn(`Unloading plugin ${descriptor.name}@${descriptor.version} (ID=${descriptor.id})`);
+
         await this._databaseService.run(`
                 UPDATE Plugins
                 SET enabled = 0
@@ -102,6 +106,8 @@ class PluginService {
             });
         
         delete this._pluginCache[descriptor.id];
+
+        LOG.warn(`Unloading plugin ${descriptor.name}@${descriptor.version} complete (ID=${descriptor.id})`);
     }
 
     async _loadPlugin(pluginType, pluginPath) {
@@ -111,7 +117,9 @@ class PluginService {
 
         const pluginInfo = await plugin.getPluginInfo();
 
-        const result = await this._databaseService.run(`
+        LOG.warn(`Loading plugin ${pluginInfo.name}...`);
+
+        await this._databaseService.run(`
             INSERT INTO Plugins (loader, path, enabled, failureSafe, name, description, version)
             VALUES (:loader, :path, 1, :failureSafe, :name, :description, :version)
             ON CONFLICT (path) DO UPDATE SET
@@ -131,14 +139,11 @@ class PluginService {
             ':version': pluginInfo.version
         });
 
-        let id = result.lastID;
-        if (id === 0) {
-            id = (await this._databaseService.get(`
+        const id = (await this._databaseService.get(`
                 SELECT id from Plugins WHERE path = :path
             `, {
                 ':path': pluginPath
             })).id;
-        }
 
         await Promise.all(pluginInfo.types.map(type => this._databaseService.run(`
                 INSERT INTO PluginType (pluginId, type)
@@ -152,6 +157,9 @@ class PluginService {
         this._pluginCache[id] = plugin;
         pluginInfo.id = id;
         plugin.setPluginId(id);
+
+        LOG.warn(`Loading plugin ${pluginInfo.name}@${pluginInfo.version} complete (ID=${pluginInfo.id})`);
+
         return pluginInfo;
     }
     
@@ -190,40 +198,50 @@ class PluginService {
         return pluginDir + sep + sliced.substr(0, index < 0 ? sliced.length : index);
     }
 
-    async _handleWatchEvent(_, path) {
-        const pluginPath = this._getRelevantModuleForPath(path);
-        if (pluginPath === null) {
-            return;
-        }
+    _handleWatchEvent(_, path) {
+        this._lastLoad = this._lastLoad.then(async() => {
+            try {
+                const pluginPath = this._getRelevantModuleForPath(path);
+                if (pluginPath === null) {
+                    return;
+                }
+                await this._handleWatchEventDeduplicated(pluginPath);
+            }
+            catch (e) {
+                LOG.error(`Modifying plugin state for plugin at path '${path}' failed.`, e);
+            }
+        });
+    }
 
-        const pluginStatusPromise = asyncStat(pluginPath)
-            .then(s => s.isFile() ? 'file' : 'package')
-            .catch(() => 'deleted');
-        const databaseLookupPromise = this._databaseService.get(`
+    async _handleWatchEventDeduplicated(pluginPath) {
+        const statResult = await this._getPluginType(pluginPath);
+        const databaseResult = await this._databaseService.get(`
                 SELECT * from Plugins
-                WHERE path = :pluginPath AND enabled = 1
+                WHERE path = :pluginPath
             `, {
                 ':pluginPath': pluginPath
             });
 
-        const statResult = await pluginStatusPromise;
-        const databaseResult = await databaseLookupPromise;
-        
         if (statResult === 'deleted') {
             if (databaseResult) {
                 await this._unloadPlugin(databaseResult);
-                LOG.warn(`Unloaded plugin ${databaseResult.name}@${databaseResult.version} (ID=${databaseResult.id})`);
             }
         }
-        else if (!databaseResult) {
-            const info = await this._loadPlugin(statResult, pluginPath);
-            if (info) {
-                LOG.warn(`Loaded plugin ${info.name}@${info.version} (ID=${info.id})`);
-            }
+        else if (!databaseResult || (databaseResult && !this._pluginCache[databaseResult.id])) {
+            await this._loadPlugin(statResult, pluginPath);
         }
-        else {
+        else if (databaseResult.enabled === 1) {
             await this._reloadPlugin(statResult, databaseResult);
-            LOG.warn(`Reloaded plugin ${databaseResult.name}@${databaseResult.version} (ID=${databaseResult.id})`);
+        }
+    }
+
+    async _getPluginType(path) {
+        try {
+            const result = await asyncStat(path)
+            return result.isFile() ? 'file' : 'package';
+        }
+        catch (e) {
+            return 'deleted';
         }
     }
 }

@@ -10,7 +10,7 @@ module.exports = logLevel => {
         level: logLevel,
         format: format.combine(
             format.timestamp({
-                format: 'YYYY-MM-DD HH:MM:SS'
+                format: 'YYYY-MM-DD HH:mm:ss'
             }),
             format.splat(),
             format.colorize({ all: false }),
