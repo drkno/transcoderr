@@ -18,20 +18,21 @@ class PackagePlugin extends Plugin {
         return this._packageJsonHash;
     }
 
-    async getPluginInfo() {
+    async getPlugin() {
+        const json = await this._getJsonContents();
+        const main = join(this._pluginFolder, json.main);
+        return await this.__getPlugin(main, json.name);
+    }
+
+    async _loadPluginInfo() {
         const json = await this._getJsonContents();
         return {
             name: json.name,
             description: json.description,
             version: json.version,
+            path: this._pluginFolder,
             types: this.__convertToPluginType(json.pluginTypes)
         };
-    }
-
-    async getPlugin() {
-        const json = await this._getJsonContents();
-        const main = join(this._pluginFolder, json.main);
-        return await this.__getPlugin(main, json.name);
     }
 
     async __shouldInvalidate() {

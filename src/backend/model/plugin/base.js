@@ -27,6 +27,7 @@ class Plugin {
     constructor() {
         this._plugin = null;
         this._pluginId = null;
+        this._pluginInfo = null;
         this._hasErrors = false;
     }
 
@@ -36,6 +37,20 @@ class Plugin {
 
     setPluginId(id) {
         this._pluginId = id;
+        if (this._pluginInfo) {
+            this._pluginInfo.id = id;
+        }
+    }
+
+    async getPluginInfo() {
+        if (!this._pluginInfo) {
+            this._pluginInfo = await this._loadPluginInfo();
+        }
+        return this._pluginInfo;
+    }
+
+    getTypes() {
+        return this._pluginInfo.types;
     }
 
     shouldReload() {
@@ -87,6 +102,17 @@ class Plugin {
             stream.on('data', chunk => hash.update(chunk));
             stream.on('end', () => resolve(hash.digest('hex')));
         });
+    }
+
+    toJSON() {
+        return Object.assign({
+            enabled: true,
+            hasErrors: this._hasErrors
+        }, this._pluginInfo);
+    }
+
+    toString() {
+        return this.toJSON();
     }
 }
 

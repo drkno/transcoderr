@@ -1,3 +1,4 @@
+const EventEmitter = require('events');
 const { stat } = require('fs');
 const { sep } = require('path');
 const { promisify } = require('util');
@@ -7,8 +8,10 @@ const { debounceArgs } = require('../utils/debounce');
 
 const asyncStat = promisify(stat);
 
-class PluginService {
+class PluginService extends EventEmitter {
     constructor(preferencesService, databaseService) {
+        super();
+
         this._preferencesService = preferencesService;
         this._databaseService = databaseService;
         this._pluginDirectories = [
@@ -32,6 +35,56 @@ class PluginService {
         this._watcher.on('all', this._handleWatchEvent.bind(this));
     }
 
+    async enablePlugin(id) {
+        const databaseResult = await this._databaseService.get(`
+            SELECT * from Plugins
+            WHERE id = :pluginId
+        `, {
+            ':pluginId': id
+        });
+
+        if (!databaseResult) {
+            throw new Error('No such plugin');
+        }
+
+        const statResult = await this._getPluginType(pluginPath);
+
+        if (!statResult || statResult === 'deleted') {
+            throw new Error('Plugin does not exist on disk');
+        }
+
+        await this._loadPlugin(statResult, databaseResult.path);
+    }
+
+    async disablePlugin(id) {
+        if (!this._pluginCache[id]) {
+            throw new Error('No such plugin');
+        }
+        const descriptor = await this._pluginCache[id].getPluginInfo();
+        await this._unloadPlugin(descriptor);
+    }
+
+    async deletePlugin(id) {
+        LOG.warn(`Force-deleting plugin with id ${id}`);
+        if (this._pluginCache[id]) {
+            const descriptor = await this._pluginCache[id].getPluginInfo();
+            await this._unloadPlugin(descriptor);
+        }
+        await this._databaseService.run(`
+            DELETE FROM Plugins
+            WHERE id = :pluginId
+        `, {
+            ':pluginId': id
+        });
+        await this._databaseService.run(`
+            DELETE FROM PluginType
+            WHERE pluginId = :pluginId
+        `, {
+            ':pluginId': id
+        });
+        LOG.warn(`Force-deleting plugin with id ${id} complete.`);
+    }
+
     async getMetaPlugins() {
         return await this._listPlugins(PluginType.META);
     }
@@ -52,115 +105,131 @@ class PluginService {
         return await this._listPlugins(PluginType.EXEC);
     }
 
-    async getAllPlugins() {
-        return await this._listPlugins();
+    async getAllLoadedPlugins() {
+        return await this._listPlugins(null, false);
     }
 
-    async _listPlugins(type) {
-        const plugins = await (!!type ?
-            this._databaseService.all(`
-                SELECT p.*
-                FROM Plugins p
-                JOIN PluginType t
-                ON p.id = t.pluginId
-                WHERE t.type = :type AND p.enabled = 1
-            `, {
-                ':type': type
-            }) :
-            this._databaseService.all(`
-                SELECT *
-                FROM Plugins
-            `));
+    async getAllKnownPlugins() {
+        return await this._listPlugins(null, true);
+    }
 
-        return plugins.map(plugin => {
-                const cachedPlugin = this._pluginCache[plugin.id];
-                if (!cachedPlugin) {
-                    LOG.warn(`Plugin ${plugin.id} does not appear to be loaded. Has it been uninstalled?`);
-                    this._unloadPlugin(plugin);
-                }
-                return cachedPlugin;
-            })
-            .filter(plugin => !!plugin);
+    async _listPlugins(type, includeDisabled) {
+        const disabledPlugins = (await this._databaseService.all(`
+            SELECT *
+            FROM Plugins
+            WHERE enabled != 1
+        `))
+        .map(plugin => {
+            plugin.enabled = false;
+            plugin.hasErrors = plugin.hasErrors === 0 ? false : true;
+            plugin.failureSafe = plugin.failureSafe === 0 ? false : true;
+            plugin.types = [];
+            delete plugin.loader;
+            return plugin;
+        });
+
+        const plugins = Object.values(this._pluginCache).concat(disabledPlugins);
+
+        return plugins.filter(plugin => !type || plugin.getTypes().includes(type))
+                      .filter(plugin => plugin.enabled || includeDisabled);
     }
 
     async _unloadPlugin(descriptor) {
-        if (!descriptor) {
-            return;
+        try {
+            if (!descriptor) {
+                return;
+            }
+
+            LOG.warn(`Unloading plugin ${descriptor.name}@${descriptor.version} (ID=${descriptor.id})`);
+            this.emit('unloading', descriptor);
+
+            await this._databaseService.run(`
+                    UPDATE Plugins
+                    SET enabled = 0
+                    WHERE id = :pluginId
+                `, {
+                    ':pluginId': descriptor.id
+                });
+            
+            delete this._pluginCache[descriptor.id];
+
+            this.emit('unloaded', descriptor);
+            LOG.warn(`Unloading plugin ${descriptor.name}@${descriptor.version} complete (ID=${descriptor.id})`);
         }
-
-        LOG.warn(`Unloading plugin ${descriptor.name}@${descriptor.version} (ID=${descriptor.id})`);
-
-        await this._databaseService.run(`
-                UPDATE Plugins
-                SET enabled = 0
-                WHERE id = :pluginId
-            `, {
-                ':pluginId': descriptor.id
-            });
-
-        await this._databaseService.run(`
-                DELETE FROM PluginType
-                WHERE pluginId = :pluginId
-            `, {
-                ':pluginId': descriptor.id
-            });
-        
-        delete this._pluginCache[descriptor.id];
-
-        LOG.warn(`Unloading plugin ${descriptor.name}@${descriptor.version} complete (ID=${descriptor.id})`);
+        catch (e) {
+            this.emit('unloadfail', descriptor);
+            LOG.error(`Unloading plugin ${descriptor.name}@${descriptor.version} complete (ID=${descriptor.id}) failed.`, e);
+            throw e;
+        }
     }
 
     async _loadPlugin(pluginType, pluginPath) {
-        const plugin = pluginType === 'file'
-            ? new FilePlugin(pluginPath)
-            : new PackagePlugin(pluginPath);
+        try {
+            const plugin = pluginType === 'file'
+                ? new FilePlugin(pluginPath)
+                : new PackagePlugin(pluginPath);
 
-        const pluginInfo = await plugin.getPluginInfo();
+            const pluginInfo = await plugin.getPluginInfo();
 
-        LOG.warn(`Loading plugin ${pluginInfo.name}...`);
+            LOG.warn(`Loading plugin ${pluginInfo.name}...`);
+            this.emit('loading', pluginInfo);
 
-        await this._databaseService.run(`
-            INSERT INTO Plugins (loader, path, enabled, failureSafe, name, description, version)
-            VALUES (:loader, :path, 1, :failureSafe, :name, :description, :version)
-            ON CONFLICT (path) DO UPDATE SET
-            loader = :loader,
-            enabled = 1,
-            failureSafe = :failureSafe,
-            name = :name,
-            description = :description,
-            version = :version
-            WHERE path = :path
-        `, {
-            ':loader': pluginType,
-            ':path': pluginPath,
-            ':failureSafe': !!pluginInfo.failureSafe ? 1 : 0,
-            ':name': pluginInfo.name,
-            ':description': pluginInfo.description,
-            ':version': pluginInfo.version
-        });
-
-        const id = (await this._databaseService.get(`
-                SELECT id from Plugins WHERE path = :path
+            await this._databaseService.run(`
+                INSERT INTO Plugins (loader, path, enabled, failureSafe, name, description, version)
+                VALUES (:loader, :path, 1, :failureSafe, :name, :description, :version)
+                ON CONFLICT (path) DO UPDATE SET
+                loader = :loader,
+                enabled = 1,
+                failureSafe = :failureSafe,
+                name = :name,
+                description = :description,
+                version = :version
+                WHERE path = :path
             `, {
-                ':path': pluginPath
-            })).id;
+                ':loader': pluginType,
+                ':path': pluginPath,
+                ':failureSafe': !!pluginInfo.failureSafe ? 1 : 0,
+                ':name': pluginInfo.name,
+                ':description': pluginInfo.description,
+                ':version': pluginInfo.version
+            });
 
-        await Promise.all(pluginInfo.types.map(type => this._databaseService.run(`
-                INSERT INTO PluginType (pluginId, type)
-                VALUES (:pluginId, :type)
-                ON CONFLICT (pluginId, type) DO NOTHING
+            const id = (await this._databaseService.get(`
+                    SELECT id from Plugins WHERE path = :path
+                `, {
+                    ':path': pluginPath
+                })).id;
+            
+            await this._databaseService.run(`
+                DELETE FROM PluginType
+                WHERE pluginId = :pluginId
             `, {
-                ':pluginId': id,
-                ':type': type
-            })));
+                ':pluginId': id
+            });
 
-        this._pluginCache[id] = plugin;
-        pluginInfo.id = id;
-        plugin.setPluginId(id);
+            await Promise.all(pluginInfo.types.map(type => this._databaseService.run(`
+                    INSERT INTO PluginType (pluginId, type)
+                    VALUES (:pluginId, :type)
+                    ON CONFLICT (pluginId, type) DO NOTHING
+                `, {
+                    ':pluginId': id,
+                    ':type': type
+                })));
 
-        LOG.warn(`Loading plugin ${pluginInfo.name}@${pluginInfo.version} complete (ID=${pluginInfo.id})`);
+            this._pluginCache[id] = plugin;
+            pluginInfo.id = id;
+            plugin.setPluginId(id);
 
-        return pluginInfo;
+            this.emit('loaded', pluginInfo);
+            LOG.warn(`Loading plugin ${pluginInfo.name}@${pluginInfo.version} complete (ID=${pluginInfo.id})`);
+
+            return pluginInfo;
+        }
+        catch(e) {
+            this.emit('loadfail', pluginPath);
+            LOG.error(`Loading plugin at ${pluginPath} failed.`, e);
+            throw e;
+        }
     }
     
     async _reloadPlugin(pluginType, descriptor) {
@@ -200,11 +269,11 @@ class PluginService {
 
     _handleWatchEvent(_, path) {
         this._lastLoad = this._lastLoad.then(async() => {
+            const pluginPath = this._getRelevantModuleForPath(path);
+            if (pluginPath === null) {
+                return;
+            }
             try {
-                const pluginPath = this._getRelevantModuleForPath(path);
-                if (pluginPath === null) {
-                    return;
-                }
                 await this._handleWatchEventDeduplicated(pluginPath);
             }
             catch (e) {

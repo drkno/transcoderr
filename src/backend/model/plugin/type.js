@@ -7,6 +7,10 @@ class Type {
         return this.type;
     }
 
+    toJSON() {
+        return this.type;
+    }
+
     toString() {
         return this.type;
     }

@@ -5,6 +5,7 @@ const radarr = require('./radarr');
 const manual = require('./manual');
 const jobs = require('./jobs');
 const jobStates = require('./jobStates');
+const plugins = require('./plugins');
 
 module.exports = serviceFactory => {
     const apiRouter = Router();
@@ -17,6 +18,8 @@ module.exports = serviceFactory => {
 
     apiRouter.use('/job', jobs(serviceFactory));
     apiRouter.get('/jobStates', jobStates(serviceFactory));
+
+    apiRouter.use('/plugin', plugins(serviceFactory));
 
     return apiRouter;
 };

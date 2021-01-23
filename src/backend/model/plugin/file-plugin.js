@@ -12,21 +12,22 @@ class FilePlugin extends Plugin {
         return this._checksum;
     }
 
-    async getPluginInfo() {
+    async getPlugin() {
+        return await this.__getPlugin(this._fileLocation, this._fileName);
+    }
+
+    async _loadPluginInfo() {
         const plugin = await this.getPlugin();
         const descriptor = Object.assign({
             name: this._fileName,
             description: '',
             version: -1,
-            types: []
+            types: [],
+            path: this._fileLocation
         }, plugin.describe());
         descriptor.types = this.__convertToPluginType(descriptor.types);
 
         return descriptor;
-    }
-
-    async getPlugin() {
-        return await this.__getPlugin(this._fileLocation, this._fileName);
     }
 
     async __shouldInvalidate() {

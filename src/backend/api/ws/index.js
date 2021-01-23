@@ -19,5 +19,11 @@ module.exports = (io, serviceFactory) => {
         
         createForwardingListener('job-updated', jobsService, socket);
         createForwardingListener('new-job', jobsService, socket);
+        createForwardingListener('loading', pluginService, socket);
+        createForwardingListener('loaded', pluginService, socket);
+        createForwardingListener('loadfail', pluginService, socket);
+        createForwardingListener('unloading', pluginService, socket);
+        createForwardingListener('unloaded', pluginService, socket);
+        createForwardingListener('unloadfail', pluginService, socket);
     });
 };
