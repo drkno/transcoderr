@@ -5,13 +5,17 @@
     "license": "MIT",
     "dependencies": {
         "body-parser": "^1.19.0",
-        "chokidar": "^3.3.1",
+        "chokidar": "^3.5.1",
         "express": "^4.17.1",
         "sandboxed-module": "^2.0.4",
-        "socket.io": "^2.4.0",
-        "sqlite": "^4.0.7",
-        "sqlite3": "^4.1.1",
-        "winston": "^3.2.1"
+        "socket.io": "^3.1.0",
+        "sqlite": "^4.0.19",
+        "sqlite3": "^5.0.1",
+        "winston": "^3.3.3"
+    },
+    "resolutions": {
+        "sqlite3/node-pre-gyp": "^0.16.0",
+        "sqlite3/node-gyp": "^7.1.2"
     },
     "scripts": {
         "start": "node main.js"

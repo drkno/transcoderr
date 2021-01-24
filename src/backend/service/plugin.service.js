@@ -1,4 +1,4 @@
-const EventEmitter = require('events');
+const EventEmitter = require('../utils/EventEmitter');
 const { stat } = require('fs');
 const { sep } = require('path');
 const { promisify } = require('util');

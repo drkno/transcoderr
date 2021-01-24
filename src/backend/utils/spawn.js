@@ -1,5 +1,5 @@
 const { spawn } = require('child_process');
-const EventEmitter = require('events');
+const EventEmitter = require('../utils/EventEmitter');
 
 class ChildProcess extends EventEmitter {
     constructor(command, args = [], options = {}) {

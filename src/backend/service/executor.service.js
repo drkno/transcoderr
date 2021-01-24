@@ -1,4 +1,4 @@
-const EventEmitter = require('events');
+const EventEmitter = require('../utils/EventEmitter');
 const JobState = require('../model/job-state');
 const JobPluginState = require('../model/job-plugin-state');
 const { MetaCollector, PreCollector, FilterCollector, ExecCollector, PostCollector } = require('../model/collector');
