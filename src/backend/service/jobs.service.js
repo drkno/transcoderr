@@ -11,6 +11,18 @@ class JobsService extends EventEmitter {
     }
 
     async updatePluginExecutionState(job, pluginId, jobState, state, context) {
+        if (context) {
+            if (context instanceof Error) {
+                context = context.message + '\n' + context.stack;
+            }
+            else if (typeof(context) !== 'string') {
+                context = JSON.stringify(context);
+            }
+        }
+        else {
+            context = '';
+        }
+
         await this._databaseService.run(`
             INSERT INTO JobExecutions (jobId, pluginId, jobState, state, context)
             VALUES (:jobId, :pluginId, :jobState, :state, :context)
@@ -35,9 +47,7 @@ class JobsService extends EventEmitter {
 
         if (state === JobPluginState.FAILED || state === JobPluginState.UNKNOWN) {
             LOG.error(`Job ${job.getJobId()}, plugin ID=${pluginId} - ${jobState} execution changed state to '${state}'${context ? ' - ' + (context.message || context) : ''}`);
-            if (context && context.stack) {
-                LOG.debug(context.stack);
-            }
+            LOG.debug(context);
         }
         else {
             LOG.info(`Job ${job.getJobId()}, plugin ID=${pluginId} - ${jobState} execution changed state to '${state}'`);
@@ -109,14 +119,16 @@ class JobsService extends EventEmitter {
 
     async getAllJobs() {
         const jobs = await this._databaseService.all(`SELECT * FROM Jobs`);
-        return jobs.map(job => this._toJobRecord(job));
+        const executions = await this._getJobExecutions();
+        return jobs.map(job => this._toJobRecord(job, executions[job.id]));
     }
 
     async getJob(id) {
         const job = await this._databaseService.get(`SELECT * FROM Jobs where id = :jobId`, {
             ':jobId': id
         });
-        return this._toJobRecord(job);
+        const executions = await this._getJobExecutions(id);
+        return this._toJobRecord(job, executions[id]);
     }
 
     async getJobsForFiles(files) {
@@ -145,9 +157,26 @@ class JobsService extends EventEmitter {
 
     async _getExistingJobs(files) {
         const jobs = await this._databaseService.all(`SELECT * FROM Jobs WHERE file IN (:files)`, {
-                ':files': files
-            });
-        return jobs.map(job => this._toJobRecord(job));
+            ':files': files
+        });
+        const executions = await this._getJobExecutions(jobs.map(job => job.id));
+        return jobs.map(job => this._toJobRecord(job, executions[job.id]));
+    }
+
+    async _getJobExecutions(id) {
+        const executions = await (id
+            ? this._databaseService.all(`SELECT * FROM JobExecutions WHERE jobId IN (:jobId)`, {
+                ':jobId': Array.isArray(id) ? id : [id]
+            })
+            : this._databaseService.all(`SELECT * FROM JobExecutions`));
+        const asDict = {};
+        for (let exec of executions) {
+            asDict[exec.jobId] = asDict[exec.jobId] || {};
+            if (!asDict[exec.jobId][exec.pluginId] || asDict[exec.jobId][exec.pluginId].id < exec.id) {
+                asDict[exec.jobId][exec.pluginId] = exec;
+            }
+        }
+        return asDict;
     }
 
     async _createNewJobs(files) {
@@ -175,11 +204,12 @@ class JobsService extends EventEmitter {
         return job;
     }
 
-    _toJobRecord(record) {
+    _toJobRecord(record, plugins) {
         record.state = JobState.from(record.state);
         record.lastRun = !!record.lastRun ? new Date(record.lastRun) : null;
         record.lastSuccess = !!record.lastSuccess ? new Date(record.lastSuccess) : null;
         record.lastFailure = !!record.lastFailure ? new Date(record.lastFailure) : null;
+        record.plugins = plugins || {};
         return new JobRecord(record);
     }
 }

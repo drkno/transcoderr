@@ -25,5 +25,6 @@ module.exports = (io, serviceFactory) => {
         createForwardingListener('unloading', pluginService, socket);
         createForwardingListener('unloaded', pluginService, socket);
         createForwardingListener('unloadfail', pluginService, socket);
+        createForwardingListener('forcedelete', pluginService, socket);
     });
 };

@@ -31,16 +31,6 @@ class CropPrePlugin {
             '-filter:v', `crop=${x}:${y}:${xOffset}:${yOffset}`
         ]);
     }
-
-    async _detectCrop(file) {
-        
-        return {
-            x: cropDimensions.x.mostCommon,
-            y: cropDimensions.y.mostCommon,
-            xOffeset: cropDimensions.xOffset.mostCommon,
-            yOffset: cropDimensions.yOffset.mostCommon
-        };
-    }
 }
 
 module.exports = new CropPrePlugin();

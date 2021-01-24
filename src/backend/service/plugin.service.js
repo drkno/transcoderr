@@ -47,9 +47,13 @@ class PluginService extends EventEmitter {
             throw new Error('No such plugin');
         }
 
-        const statResult = await this._getPluginType(pluginPath);
+        const statResult = await this._getPluginType(databaseResult.path);
 
         if (!statResult || statResult === 'deleted') {
+            this.emit('loadfail', {
+                path: databaseResult.path
+            });
+            LOG.error(`Loading plugin at ${databaseResult.path} failed, it does not exist on disk.`);
             throw new Error('Plugin does not exist on disk');
         }
 
@@ -81,6 +85,9 @@ class PluginService extends EventEmitter {
             WHERE pluginId = :pluginId
         `, {
             ':pluginId': id
+        });
+        this.emit('forcedelete', {
+            id
         });
         LOG.warn(`Force-deleting plugin with id ${id} complete.`);
     }
@@ -131,7 +138,7 @@ class PluginService extends EventEmitter {
         const plugins = Object.values(this._pluginCache).concat(disabledPlugins);
 
         return plugins.filter(plugin => !type || plugin.getTypes().includes(type))
-                      .filter(plugin => plugin.enabled || includeDisabled);
+                      .filter(plugin => plugin.toJSON().enabled || includeDisabled);
     }
 
     async _unloadPlugin(descriptor) {
@@ -153,6 +160,7 @@ class PluginService extends EventEmitter {
             
             delete this._pluginCache[descriptor.id];
 
+            descriptor.enabled = false;
             this.emit('unloaded', descriptor);
             LOG.warn(`Unloading plugin ${descriptor.name}@${descriptor.version} complete (ID=${descriptor.id})`);
         }
@@ -219,14 +227,17 @@ class PluginService extends EventEmitter {
             this._pluginCache[id] = plugin;
             pluginInfo.id = id;
             plugin.setPluginId(id);
-
+            
+            pluginInfo.enabled = true;
             this.emit('loaded', pluginInfo);
             LOG.warn(`Loading plugin ${pluginInfo.name}@${pluginInfo.version} complete (ID=${pluginInfo.id})`);
 
             return pluginInfo;
         }
         catch(e) {
-            this.emit('loadfail', pluginPath);
+            this.emit('loadfail', {
+                path: pluginPath
+            });
             LOG.error(`Loading plugin at ${pluginPath} failed.`, e);
             throw e;
         }

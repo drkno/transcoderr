@@ -7,6 +7,10 @@ class State {
         return this.state;
     }
 
+    toJSON() {
+        return this.state;
+    }
+
     toString() {
         return this.getState();
     }

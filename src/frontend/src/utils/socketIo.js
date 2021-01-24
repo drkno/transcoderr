@@ -13,7 +13,7 @@ class SocketIoListener {
     on(event, listener) {
         this._listeners[event] = this._listeners[event] || [];
         this._listeners[event].push(listener);
-        this._socketConnection(event, listener);
+        this._socketConnection.on(event, listener);
     }
 
     removeAllListeners() {

@@ -93,7 +93,7 @@ class DimensionMetaPlugin {
         return {
             x: cropDimensions.x.mostCommon,
             y: cropDimensions.y.mostCommon,
-            xOffeset: cropDimensions.xOffset.mostCommon,
+            xOffset: cropDimensions.xOffset.mostCommon,
             yOffset: cropDimensions.yOffset.mostCommon
         };
     }

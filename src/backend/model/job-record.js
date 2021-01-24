@@ -9,8 +9,7 @@ class JobRecord {
         this.lastSuccess = record.lastSuccess;
         this.lastFailure = record.lastFailure;
         this.runCount = record.runCount;
-
-        this.plugins = {};
+        this.plugins = record.plugins || {};
     }
 
     getJobId() {

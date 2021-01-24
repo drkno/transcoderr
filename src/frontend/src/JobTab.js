@@ -1,7 +1,7 @@
 import React from 'react';
 import Table from 'react-bootstrap/Table';
 
-import TabComponent from './components/TabComponent';
+import IoComponent from './components/IoComponent';
 import Job from './components/Job';
 import jobsApi from './api/jobs';
 import eventDebouncer from './utils/eventDebouncer';
@@ -9,9 +9,9 @@ import mergeStates from './utils/mergeStates';
 
 import './JobTab.css';
 
-class JobTab extends TabComponent {
+class JobTab extends IoComponent {
     constructor(...args) {
-        super('Jobs', ...args);
+        super(...args);
         this.state = {
             jobs: []
         };
@@ -78,7 +78,7 @@ class JobTab extends TabComponent {
         // todo
     }
 
-    renderTab() {
+    render() {
         const sortedJobs = this.state.jobs.sort((a, b) =>
             new Date(b.lastRun).getTime() - new Date(a.lastRun).getTime());
         return (

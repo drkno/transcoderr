@@ -1,3 +1,4 @@
+const { dirname, basename, join } = require('path');
 const ChildProcess = require('../utils/spawn');
 
 class FfmpegExecPlugin {
@@ -11,11 +12,22 @@ class FfmpegExecPlugin {
     }
 
     async execmain(collector) {
+        const fullPath = collector.getMetaData().file;
+
+        const fileName = basename(fullPath);
+        const directory = dirname(fullPath);
+
+        const newPath = join(directory, 'New - ' + fileName);
+
         const ffmpegArgs = collector.getFfmpegOptions();
         const childProcess = new ChildProcess('ffmpeg',
-            ['-hide_banner'].concat(ffmpegArgs)
+            ['-hide_banner', '-i', fullPath].concat(ffmpegArgs).concat([newPath])
         );
-        await childProcess.getStdOut();
+        const stdout = await childProcess.getStdOut();
+        if (childProcess.getExitCode() !== 0) {
+            LOG.info(stdout);
+            throw new Error(await childProcess.getStdErr())
+        }
     }
 }
 

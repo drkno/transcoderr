@@ -25,7 +25,7 @@ class MergeFilterPlugin {
         this._buckets = [
             new FilterBucket(),
             new CatchAllBucket()
-        ]
+        ];
     }
 
     describe() {
@@ -37,27 +37,43 @@ class MergeFilterPlugin {
         };
     }
 
-    async filtermain(collector) {
-        const buckets = this._generateBuckets();
-        const options = collector.getFfmpegOptions();
-        for (let option of options) {
-            option[0]
-        }
-    }
-
-    _generateBuckets() {
-        const buckets = {};
-        for (let bucket of this._buckets) {
-            const bucketList = [];
-            for (let bucketReference of bucket) {
-                buckets[bucketReference] = bucketList;
+    _generateBuckets(buckets) {
+        const bucketMap = {};
+        for (let bucket of buckets) {
+            const bucketItem = {
+                collector: bucket,
+                list: []
+            };
+            for (let bucketReference of bucket.patterns()) {
+                bucketMap[bucketReference] = bucketItem;
             }
         }
-        return buckets;
+        return bucketMap;
     }
 
-    _mergeVideoFilters() {
+    async filtermain(collector) {
+        try {
+            const buckets = this._generateBuckets(this._buckets);
+            const options = collector.getFfmpegOptions();
+            if (options.length === 0) {
+                collector.vetoExec();
+                return;
+            }
 
+            for (let option of options) {
+                const firstOption = option[0];
+                const bucket = buckets[firstOption] || buckets['*'];
+                bucket.list.push(option);
+            }
+
+            collector.replaceAllFfmpegOptions([...new Set(Object.values(buckets))]
+                .map(bucket => bucket.collector.merge(bucket.list))
+                .flatMap(a => a));
+        }
+        catch(e) {
+            LOG.error(e);
+            throw e;
+        }
     }
 }
 
