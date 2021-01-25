@@ -5,21 +5,19 @@ const PluginType = require('./type');
 
 class PluginLogger {
     constructor(name) {
+        this._pluginName = name;
         const logNames = ['emerg', 'crit', 'alert', 'warning', 'notice', 'info', 'debug', 'warn', 'http', 'verbose', 'silly', 'error'];
         for (let callName of logNames) {
-            this._wrapCall(callName, name);
+            this[callName] = this.log.bind(this, callName);
         }
     }
 
-    _wrapCall(callName, name) {
-        this[callName] = arg => {
-            if (typeof(arg) !== 'string') {
-                try {
-                    arg = JSON.stringify(arg, null, 4);
-                } catch(e) {}
-            }
-            return global.LOG[callName].apply(global.LOG, [`[${name}] ` + arg]);
-        };
+    log(methodName, ...args) {
+        if (typeof(args[0]) !== 'string') {
+            args[0] = JSON.stringify(args[0], null, 4);
+        }
+        args[0] = `[${this._pluginName}] ${args[0]}`;
+        global.LOG[methodName](...args);
     }
 }
 

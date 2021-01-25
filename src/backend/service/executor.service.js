@@ -2,13 +2,21 @@ const EventEmitter = require('../utils/EventEmitter');
 const JobState = require('../model/job-state');
 const JobPluginState = require('../model/job-plugin-state');
 const { MetaCollector, PreCollector, FilterCollector, ExecCollector, PostCollector } = require('../model/collector');
+const sleep = require('../utils/sleep');
+
+const PREFERENCE_MAX_PARALLEL = 'executor.max.parallel';
+const PREFERENCE_MAX_PARALLEL_DEFAULT = 1;
 
 class ExecutorService extends EventEmitter {
-    constructor(pluginService, jobsService) {
+    constructor(pluginService, jobsService, preferencesService) {
         super();
         this._jobsService = jobsService;
         this._pluginService = pluginService;
+        this._preferencesService = preferencesService;
+        this._queuedJobs = [];
         this._inProgressJobs = [];
+
+        this._queueExecutor();
     }
 
     async abort(jobId) {
@@ -30,54 +38,71 @@ class ExecutorService extends EventEmitter {
         if (typeof(filesOrJobs[0]) === 'string') {
             newJobs = (await this._jobsService.getJobsForFiles(filesOrJobs))
                 .map(job => {
-                    this._inProgressJobs.push(job);
                     return job;
                 });
         } else {
             newJobs = filesOrJobs;
         }
 
+        for (let job of newJobs) {
+            if (job.getState().isFinalState() && job.getState() !== JobState.NEW) {
+                await this._jobsService.updateJobState(job, JobState.RENEW);
+            }
+        }
+
+        this._queuedJobs.push(...newJobs);
+    }
+
+    async _queueExecutor() {
+        while(true) {
+            const maxParallel = await this._preferencesService.getPreferenceForIdOrSetDefault(PREFERENCE_MAX_PARALLEL, PREFERENCE_MAX_PARALLEL_DEFAULT);
+            let numSlots = Math.max(0, maxParallel - this._inProgressJobs.length);
+            while(this._queuedJobs.length > 0 && numSlots > 0) {
+                const job = this._queuedJobs.shift();
+                this._inProgressJobs.push(job);
+                this._executeQueuedItem(job)
+                    .then(() => {}, () => {})
+                    .finally(() => {
+                        const index = this._inProgressJobs.indexOf(job);
+                        if (index >= 0) {
+                            this._inProgressJobs.splice(index, 1);
+                        }
+                    });
+                numSlots = Math.max(0, maxParallel - this._inProgressJobs.length);
+            }
+            await sleep(5000);
+        }
+    }
+
+    async _executeQueuedItem(job) {
         const metaPlugins = await this._pluginService.getMetaPlugins();
         const prePlugins = await this._pluginService.getPrePlugins();
         const filterPlugins = await this._pluginService.getFilterPlugins();
         const execPlugins = await this._pluginService.getExecPlugins();
         const postPlugins = await this._pluginService.getPostPlugins();
 
-        const tasks = newJobs.map(async(job) => {
-            if (job.getState().isFinalState() && job.getState() !== JobState.NEW) {
-                await this._jobsService.updateJobState(job, JobState.RENEW);
-            }
+        const metaCollector = new MetaCollector(job.getFile());
+        await this._executeState(JobState.META, job, metaPlugins, metaCollector);
 
-            const metaCollector = new MetaCollector(job.getFile());
-            await this._executeState(JobState.META, job, metaPlugins, metaCollector);
+        const preCollector = new PreCollector(metaCollector);
+        await this._executeState(JobState.PRE, job, prePlugins, preCollector);
 
-            const preCollector = new PreCollector(metaCollector);
-            await this._executeState(JobState.PRE, job, prePlugins, preCollector);
+        const filterCollector = new FilterCollector(preCollector);
+        await this._executeState(JobState.FILTER, job, filterPlugins, filterCollector);
 
-            const filterCollector = new FilterCollector(preCollector);
-            await this._executeState(JobState.FILTER, job, filterPlugins, filterCollector);
+        let postCollector;
+        if (filterCollector.shouldExec()) {
+            const execCollector = new ExecCollector(filterCollector);
+            await this._executeState(JobState.EXEC, job, execPlugins, execCollector);
 
-            let postCollector;
-            if (filterCollector.shouldExec()) {
-                const execCollector = new ExecCollector(filterCollector);
-                await this._executeState(JobState.EXEC, job, execPlugins, execCollector);
+            postCollector = new PostCollector(execCollector);
+        } else {
+            postCollector = new PostCollector(filterCollector);
+        }
 
-                postCollector = new PostCollector(execCollector);
-            } else {
-                postCollector = new PostCollector(filterCollector);
-            }
+        await this._executeState(JobState.POST, job, postPlugins, postCollector);
 
-            await this._executeState(JobState.POST, job, postPlugins, postCollector);
-
-            await this._jobsService.updateJobState(job, JobState.COMPLETE);
-            const index = this._inProgressJobs.indexOf(job);
-            if (index >= 0) {
-                this._inProgressJobs.splice(index, 1);
-            }
-            return job;
-        });
-
-        return await Promise.all(tasks);
+        await this._jobsService.updateJobState(job, JobState.COMPLETE);
     }
 
     async _executeState(jobState, job, plugins, collector) {

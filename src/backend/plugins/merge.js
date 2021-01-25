@@ -1,12 +1,85 @@
-class FilterBucket {
+class CodecBucket {
+    constructor(prefix) {
+        this._prefix = prefix;
+    }
+
+    filterPatterns() {
+        return [`-${this._prefix}f`, `-filter:${this._prefix}`];
+    }
+
+    encoderPatterns() {
+        return [`-c:${this._prefix}`, `-${this._prefix}codec`, `-codec:${this._prefix}`];
+    }
+
     patterns() {
-        return ['-vf', '-filter:v'];
+        return this.filterPatterns().concat(this.encoderPatterns());
     }
 
     merge(options) {
-        return ['-vf', options.map(option => option.slice(1))
-            .flatMap(a => a)
-            .join(',')];
+        const encoderPatterns = this.encoderPatterns();
+        const filterPatterns = this.filterPatterns();
+
+        const filter = options.filter(option => filterPatterns.includes(option[0]))
+                                .map(option => option.slice(1))
+                                .flatMap(a => a)
+                                .join(',');
+
+        let encode = options.filter(option => encoderPatterns.includes(option[0]))
+                            .map(option => option[1])
+                            .reduce((acc, curr) => {
+                                if (acc !== '' && acc !== curr) {
+                                    throw new Error(`Attempting to merge incompatible encoder options, '${encoderPatterns[0]} ${acc}' and '${encoderPatterns[0]} ${curr}'.`)
+                                }
+                                return curr;
+                            }, '');
+
+        if (filter !== '' && encode === 'copy') {
+            LOG.warn('Filtering and streamcopy cannot be used together, demoting copy to encode');
+            encode = '';
+        }
+        else if (filter === '' && encode === '') {
+            encode = 'copy';
+        }
+
+        let results = [];
+        if (encode !== '') {
+            results = results.concat([encoderPatterns[0], encode]);
+        }
+        if (filter !== '') {
+            results = results.concat([filterPatterns[0], filter]);
+        }
+        return results;
+    }
+}
+
+class VideoCodecBucket extends CodecBucket {
+    constructor() {
+        super('v');
+    }
+}
+
+class AudioCodecBucket extends CodecBucket {
+    constructor() {
+        super('a');
+    }
+}
+
+class SubtitleCodecBucket extends CodecBucket {
+    constructor() {
+        super('s');
+    }
+}
+
+class MapBucket {
+    patterns() {
+        return ['-map'];
+    }
+
+    merge(options) {
+        if (options.length > 0) {
+            return options.flatMap(a => a);
+        }
+        return ['-map', '0'];
     }
 }
 
@@ -23,8 +96,11 @@ class CatchAllBucket {
 class MergeFilterPlugin {
     constructor() {
         this._buckets = [
-            new FilterBucket(),
-            new CatchAllBucket()
+            new VideoCodecBucket(),
+            new AudioCodecBucket(),
+            new SubtitleCodecBucket(),
+            new CatchAllBucket(),
+            new MapBucket()
         ];
     }
 

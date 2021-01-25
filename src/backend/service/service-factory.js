@@ -31,7 +31,8 @@ class ServiceFactory {
         return this._lazyInstantiate('_executor', () => {
             const jobsService = this.getJobsService();
             const pluginService = this.getPluginService();
-            return new ExecutorService(pluginService, jobsService);
+            const preferencesService = this.getPreferencesService();
+            return new ExecutorService(pluginService, jobsService, preferencesService);
         });
     }
 

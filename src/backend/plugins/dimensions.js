@@ -64,38 +64,32 @@ class DimensionMetaPlugin {
                 const [x, y, xOffset, yOffset] = curr;
 
                 acc.x[x] = (acc.x[x] || 0) + 1;
-                acc.x.mostCommon = acc.x[x] > acc.x.mostCommon ? x : acc.x.mostCommon;
-
                 acc.y[y] = (acc.y[y] || 0) + 1;
-                acc.y.mostCommon = acc.y[y] > acc.y.mostCommon ? y : acc.y.mostCommon;
-
                 acc.xOffset[xOffset] = (acc.xOffset[xOffset] || 0) + 1;
-                acc.xOffset.mostCommon = acc.xOffset[xOffset] > acc.xOffset.mostCommon ? xOffset : acc.xOffset.mostCommon;
-
                 acc.yOffset[yOffset] = (acc.yOffset[yOffset] || 0) + 1;
-                acc.yOffset.mostCommon = acc.yOffset[yOffset] > acc.yOffset.mostCommon ? yOffset : acc.yOffset.mostCommon;
 
                 return acc;
             }, {
-                x: {
-                    mostCommon: 0
-                },
-                y: {
-                    mostCommon: 0
-                },
-                xOffset: {
-                    mostCommon: 0
-                },
-                yOffset: {
-                    mostCommon: 0
-                }
+                x: {},
+                y: {},
+                xOffset: {},
+                yOffset: {}
             });
         return {
-            x: cropDimensions.x.mostCommon,
-            y: cropDimensions.y.mostCommon,
-            xOffset: cropDimensions.xOffset.mostCommon,
-            yOffset: cropDimensions.yOffset.mostCommon
+            x: this._getMostCommon(cropDimensions.x),
+            y: this._getMostCommon(cropDimensions.y),
+            xOffset: this._getMostCommon(cropDimensions.xOffset),
+            yOffset: this._getMostCommon(cropDimensions.yOffset)
         };
+    }
+
+    _getMostCommon(dimension) {
+        return Object.entries(dimension).reduce((acc, curr) => {
+            if (curr[1] > acc[1] || (curr[1] === acc[1] && curr[0] > acc[0])) {
+                return curr;
+            }
+            return acc;
+        }, ['0', 0])[0];
     }
 }
 

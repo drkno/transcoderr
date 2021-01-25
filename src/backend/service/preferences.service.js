@@ -2,6 +2,7 @@ class PreferencesService {
     constructor(environmentService, databaseService) {
         this._environmentService = environmentService;
         this._databaseService = databaseService;
+        this._preferenceCache = {};
     }
 
     getDataDirectory() {
@@ -41,7 +42,42 @@ class PreferencesService {
     }
 
     async getPreferencesForId(id) {
-        
+        if (this._preferenceCache[id]) {
+            return this._preferenceCache[id];
+        }
+        const value = await this._databaseService.get(
+            `SELECT value from Preferences where key = :key`, {
+                ':key': id
+            }
+        );
+        this._preferenceCache[id] = !!value ? value.value : null;
+        return this._preferenceCache[id];
+    }
+
+    async setPreferenceForId(id, value) {
+        if (this._preferenceCache[id]) {
+            delete this._preferenceCache[id];
+        }
+
+        await this._databaseService.run(`
+            INSERT INTO Preferences (key, value)
+            VALUES (:key, :value)
+            ON CONFLICT (key) DO UPDATE SET
+            value = :value
+            WHERE key = :key
+        `, {
+            ':key': id,
+            ':value': value
+        });
+    }
+
+    async getPreferenceForIdOrSetDefault(id, defaultValue) {
+        const value = await this.getPreferencesForId(id);
+        if (!value) {
+            await this.setPreferenceForId(id, defaultValue);
+            return defaultValue;
+        }
+        return value;
     }
 }
 

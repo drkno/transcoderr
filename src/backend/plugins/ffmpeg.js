@@ -13,21 +13,26 @@ class FfmpegExecPlugin {
 
     async execmain(collector) {
         const fullPath = collector.getMetaData().file;
-
         const fileName = basename(fullPath);
         const directory = dirname(fullPath);
-
         const newPath = join(directory, 'New - ' + fileName);
-
         const ffmpegArgs = collector.getFfmpegOptions();
-        const childProcess = new ChildProcess('ffmpeg',
-            ['-hide_banner', '-i', fullPath].concat(ffmpegArgs).concat([newPath])
-        );
+        const editedFfmpegArgs = ['-hide_banner', '-i', fullPath].concat(ffmpegArgs).concat([newPath]);
+
+        LOG.info(`Running 'ffmpeg ${editedFfmpegArgs.map(arg => arg.indexOf(' ') >=0 ? `"${arg}"` : arg).join(' ')}'`);
+
+        const childProcess = new ChildProcess('ffmpeg', editedFfmpegArgs);
         const stdout = await childProcess.getStdOut();
-        if (childProcess.getExitCode() !== 0) {
-            LOG.info(stdout);
+
+        const exitCode = await childProcess.getExitCode();
+
+        if (exitCode !== 0) {
+            LOG.info('ffmpeg returned non-zero status code: ' + exitCode);
+            LOG.debug(stdout);
             throw new Error(await childProcess.getStdErr())
         }
+
+        LOG.info('Transcoding was successful');
     }
 }
 
