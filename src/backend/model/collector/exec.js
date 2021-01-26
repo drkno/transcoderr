@@ -5,6 +5,8 @@ class ExecCollector extends Collector {
         super();
         this._metaData = filterCollector.getMetaData();
         this._ffmpegOptions = filterCollector.getFfmpegOptions();
+        this._outputPath = '';
+        this._container = filterCollector.getContainer();
     }
 
     getMetaData() {
@@ -17,6 +19,18 @@ class ExecCollector extends Collector {
 
     shouldExec() {
         return true;
+    }
+
+    getOutputPath() {
+        return this._outputPath;
+    }
+
+    setOutputPath(path) {
+        this._outputPath = path;
+    }
+
+    getContainer() {
+        return this._container;
     }
 }
 

@@ -19,4 +19,4 @@ class DeleteFilterPlugin {
     }
 }
 
-module.exports = new DeleteFilterPlugin();
+module.exports = DeleteFilterPlugin;

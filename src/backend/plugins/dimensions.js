@@ -93,4 +93,4 @@ class DimensionMetaPlugin {
     }
 }
 
-module.exports = new DimensionMetaPlugin();
+module.exports = DimensionMetaPlugin;

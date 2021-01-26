@@ -10,7 +10,7 @@ class CropPrePlugin {
     }
 
     async premain(collector) {
-        const { dimensions, probe } = collector.getMetaData();
+        const { dimensions } = collector.getMetaData();
         if (!dimensions) {
             LOG.warn('No dimensions set, so cannot generate crop.');
             return;
@@ -51,4 +51,4 @@ class CropPrePlugin {
     }
 }
 
-module.exports = new CropPrePlugin();
+module.exports = CropPrePlugin;

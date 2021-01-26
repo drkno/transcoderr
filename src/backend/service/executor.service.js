@@ -24,8 +24,10 @@ class ExecutorService extends EventEmitter {
             await Promise.all(this._inProgressJobs
                 .filter(job => job.getJobId() === jobId)
                 .map(job => this._jobsService.updateJobState(job, JobState.ABORT)));
+            this._inProgressJobs = this._inProgressJobs.filter(job => job !== job,getJobId());
         } else {
             await Promise.all(this._inProgressJobs.map(job => this._jobsService.updateJobState(job, JobState.ABORT)));
+            this._inProgressJobs = [];
         }
     }
 
@@ -55,7 +57,7 @@ class ExecutorService extends EventEmitter {
 
     async _queueExecutor() {
         while(true) {
-            const maxParallel = await this._preferencesService.getPreferenceForIdOrSetDefault(PREFERENCE_MAX_PARALLEL, PREFERENCE_MAX_PARALLEL_DEFAULT);
+            const maxParallel = await this._preferencesService.getOrSetDefault(PREFERENCE_MAX_PARALLEL, PREFERENCE_MAX_PARALLEL_DEFAULT);
             let numSlots = Math.max(0, maxParallel - this._inProgressJobs.length);
             while(this._queuedJobs.length > 0 && numSlots > 0) {
                 const job = this._queuedJobs.shift();
@@ -111,7 +113,7 @@ class ExecutorService extends EventEmitter {
         }
         await this._jobsService.updateJobState(job, jobState);
 
-        return Promise.all(plugins.map(async(plugin) => {
+        await Promise.all(plugins.map(async(plugin) => {
             if (job.isAborted()) {
                 return;
             }

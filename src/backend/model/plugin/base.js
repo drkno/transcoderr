@@ -2,6 +2,9 @@ const { createHash } = require('crypto');
 const { createReadStream } = require('fs');
 const SandboxedModule = require('sandboxed-module');
 const PluginType = require('./type');
+const memoise = require('../../utils/memoise');
+
+const serviceFactorySupplier = memoise(() => require('../../service/service-factory'));
 
 class PluginLogger {
     constructor(name) {
@@ -22,11 +25,12 @@ class PluginLogger {
 }
 
 class Plugin {
-    constructor() {
+    constructor(enabled = true) {
         this._plugin = null;
         this._pluginId = null;
         this._pluginInfo = null;
         this._hasErrors = false;
+        this._enabled = enabled;
     }
 
     getPluginId() {
@@ -67,11 +71,13 @@ class Plugin {
         try {
             const shouldInvalidate = await this.__shouldInvalidate();
             if (this._plugin === null || shouldInvalidate) {
-                this._plugin = SandboxedModule.require(pluginPath, {
+                const RequiredPlugin = SandboxedModule.require(pluginPath, {
                     globals: {
                         LOG: new PluginLogger(pluginName)
                     }
                 });
+
+                this._plugin = new RequiredPlugin(serviceFactorySupplier());
             }
             return this._plugin;
         } catch (e) {
@@ -104,13 +110,13 @@ class Plugin {
 
     toJSON() {
         return Object.assign({
-            enabled: true,
+            enabled: this._enabled,
             hasErrors: this._hasErrors
         }, this._pluginInfo);
     }
 
     toString() {
-        return this.toJSON();
+        return JSON.stringify(this.toJSON(), null, 4);
     }
 }
 

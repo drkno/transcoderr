@@ -4,6 +4,7 @@ import Tabs from 'react-bootstrap/Tabs';
 
 import JobTab from './JobTab';
 import PluginsTab from './PluginsTab';
+import ConfigTab from './ConfigTab';
 
 const App = () => (
     <div className="App">
@@ -13,6 +14,9 @@ const App = () => (
             </Tab>
             <Tab title='Plugins' eventKey='Plugins'>
                 <PluginsTab />
+            </Tab>
+            <Tab title='Raw Config' eventKey='Config'>
+                <ConfigTab />
             </Tab>
         </Tabs>
     </div>

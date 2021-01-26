@@ -28,4 +28,4 @@ class ProbeMetaPlugin {
     }
 }
 
-module.exports = new ProbeMetaPlugin();
+module.exports = ProbeMetaPlugin;

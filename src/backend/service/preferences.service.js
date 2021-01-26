@@ -1,5 +1,8 @@
-class PreferencesService {
+const EventEmitter = require('../utils/EventEmitter');
+
+class PreferencesService extends EventEmitter {
     constructor(environmentService, databaseService) {
+        super();
         this._environmentService = environmentService;
         this._databaseService = databaseService;
         this._preferenceCache = {};
@@ -41,6 +44,15 @@ class PreferencesService {
         return this._environmentService.getLogLevel();
     }
 
+    async getAll() {
+        const values = await this._databaseService.all(`SELECT key, value from Preferences`);
+        const map = {};
+        for (let entry of values) {
+            map[entry.key] = entry.value;
+        }
+        return map;
+    }
+
     async getPreferencesForId(id) {
         if (this._preferenceCache[id]) {
             return this._preferenceCache[id];
@@ -69,15 +81,31 @@ class PreferencesService {
             ':key': id,
             ':value': value
         });
+
+        this.emit('config-changed', {
+            [id]: value
+        });
     }
 
-    async getPreferenceForIdOrSetDefault(id, defaultValue) {
+    async getOrSetDefault(id, defaultValue) {
         const value = await this.getPreferencesForId(id);
         if (!value) {
             await this.setPreferenceForId(id, defaultValue);
             return defaultValue;
         }
         return value;
+    }
+
+    async deletePreference(id) {
+        await this._databaseService.run(`
+            DELETE from Preferences
+            WHERE key = :key
+        `, {
+            ':key': id
+        });
+        this.emit('config-deleted', {
+            key: id
+        });
     }
 }
 

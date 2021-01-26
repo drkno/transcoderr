@@ -6,6 +6,7 @@ class PreCollector extends Collector {
         this._metaData = metaCollector.getAllMetaData();
         this._ffmpegOptions = [];
         this._shouldDelete = false;
+        this._container = null;
     }
 
     getMetaData() {
@@ -29,6 +30,14 @@ class PreCollector extends Collector {
             options = [options];
         }
         this._ffmpegOptions.push(options);
+    }
+
+    setContainer(container) {
+        this._container = container;
+    }
+
+    getContainer() {
+        return this._container;
     }
 }
 

@@ -1,5 +1,3 @@
-const { join } = require('path');
-
 const DatabaseService = require('./database.service');
 const DirectoryService = require('./directory.service');
 const EnvironmentService = require('./environment.service');

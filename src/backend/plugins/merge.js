@@ -153,4 +153,4 @@ class MergeFilterPlugin {
     }
 }
 
-module.exports = new MergeFilterPlugin();
+module.exports = MergeFilterPlugin;

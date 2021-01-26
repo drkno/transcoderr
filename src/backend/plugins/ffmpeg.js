@@ -1,4 +1,4 @@
-const { dirname, basename, join } = require('path');
+const { dirname, basename, join, extname } = require('path');
 const ChildProcess = require('../utils/spawn');
 
 class FfmpegExecPlugin {
@@ -13,11 +13,16 @@ class FfmpegExecPlugin {
 
     async execmain(collector) {
         const fullPath = collector.getMetaData().file;
+        const extension = extname(fullPath);
+        const newExtension = collector.getContainer() || extension;
         const fileName = basename(fullPath);
+        const fileNameWithoutExt = fileName.substr(0, fileName.length - extension.length);
         const directory = dirname(fullPath);
-        const newPath = join(directory, 'New - ' + fileName);
+        const newPath = collector.getOutputPath() || join(directory, fileNameWithoutExt + '.transcoderr' + newExtension);
         const ffmpegArgs = collector.getFfmpegOptions();
-        const editedFfmpegArgs = ['-hide_banner', '-i', fullPath].concat(ffmpegArgs).concat([newPath]);
+        const editedFfmpegArgs = ['-hide_banner', '-y', '-i', fullPath].concat(ffmpegArgs).concat([newPath]);
+
+        collector.setOutputPath(newPath);
 
         LOG.info(`Running 'ffmpeg ${editedFfmpegArgs.map(arg => arg.indexOf(' ') >=0 ? `"${arg}"` : arg).join(' ')}'`);
 
@@ -36,4 +41,4 @@ class FfmpegExecPlugin {
     }
 }
 
-module.exports = new FfmpegExecPlugin();
+module.exports = FfmpegExecPlugin;

@@ -3,7 +3,7 @@ const { stat } = require('fs');
 const { sep } = require('path');
 const { promisify } = require('util');
 const { watch } = require('chokidar');
-const { PackagePlugin, FilePlugin, PluginType } = require('../model/plugin');
+const { PackagePlugin, FilePlugin, DisabledPlugin, PluginType } = require('../model/plugin');
 const { debounceArgs } = require('../utils/debounce');
 
 const asyncStat = promisify(stat);
@@ -133,7 +133,8 @@ class PluginService extends EventEmitter {
             plugin.types = [];
             delete plugin.loader;
             return plugin;
-        });
+        })
+        .map(plugin => new DisabledPlugin(plugin));
 
         const plugins = Object.values(this._pluginCache).concat(disabledPlugins);
 

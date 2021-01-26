@@ -7,6 +7,8 @@ class FilterCollector extends Collector {
         this._ffmpegOptions = preCollector.getFfmpegOptions();
         this._shouldDelete = preCollector.shouldDelete();
         this._shouldExec = true;
+        this._outputPath = '';
+        this._container = preCollector.getContainer();
     }
 
     shouldDelete() {
@@ -31,6 +33,18 @@ class FilterCollector extends Collector {
 
     vetoExec() {
         this._shouldExec = false;
+    }
+
+    getOutputPath() {
+        return this._outputPath;
+    }
+
+    setOutputPath(path) {
+        this._outputPath = path;
+    }
+
+    getContainer() {
+        return this._container;
     }
 }
 

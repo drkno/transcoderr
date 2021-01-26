@@ -6,6 +6,7 @@ class PostCollector extends Collector {
         this._metaData = execOrFilterCollector.getMetaData();
         this._didExec = execOrFilterCollector.shouldExec();
         this._ffmpegOptions = execOrFilterCollector.getFfmpegOptions();
+        this._outputPath = execOrFilterCollector.getOutputPath();
     }
 
     getMetaData() {
@@ -18,6 +19,10 @@ class PostCollector extends Collector {
 
     getFfmpegOptions() {
         return this._clone(this._ffmpegOptions);
+    }
+
+    getOutputPath() {
+        return this._outputPath;
     }
 }
 

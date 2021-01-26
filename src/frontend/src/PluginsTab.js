@@ -144,7 +144,7 @@ class PluginsTab extends IoComponent {
                 <td>{plugin.version}</td>
                 <td>
                 {
-                    plugin.types.map(
+                    (plugin.types || []).map(
                         type => (<Type key={type}>{type}</Type>)
                     )
                 }

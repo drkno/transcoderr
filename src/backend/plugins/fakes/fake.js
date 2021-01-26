@@ -59,4 +59,4 @@ class FakeDetectorPlugin {
     }
 }
 
-module.exports = new FakeDetectorPlugin();
+module.exports = FakeDetectorPlugin;

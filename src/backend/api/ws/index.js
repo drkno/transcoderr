@@ -12,6 +12,7 @@ module.exports = (io, serviceFactory) => {
     createForwardingListener(io, serviceFactory.getExecutorService());
     createForwardingListener(io, serviceFactory.getJobsService());
     createForwardingListener(io, serviceFactory.getPluginService());
+    createForwardingListener(io, serviceFactory.getPreferencesService());
 
     io.on('connection', socket => {
         LOG.info('New websocket connection');
